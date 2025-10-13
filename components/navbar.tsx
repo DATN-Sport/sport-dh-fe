@@ -1,8 +1,9 @@
+"```typescriptreact file=\"components/navbar.tsx"
 "use client"
 
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { Activity, LogOut, User, Settings } from "lucide-react"
+import { Activity, LogOut, User, Settings, Building2, Calendar } from "lucide-react"
 import Link from "next/link"
 import {
   DropdownMenu,
@@ -26,6 +27,21 @@ export function Navbar() {
           </div>
           <span className="text-xl font-bold">Sport DH</span>
         </Link>
+
+        <div className="hidden items-center gap-2 md:flex">
+          <Button variant="ghost" asChild>
+            <Link href="/sport-centers" className="gap-2">
+              <Building2 className="h-4 w-4" />
+              Trung tâm
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/sport-fields" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Sân thể thao
+            </Link>
+          </Button>
+        </div>
 
         <div className="flex items-center gap-4">
           {user && (

@@ -54,3 +54,10 @@ export function getErrorTitle(error: unknown): string {
 
   return "Lỗi"
 }
+
+export function handleApiError(error: unknown): { title: string; description: string } {
+  return {
+    title: getErrorTitle(error),
+    description: getErrorMessage(error),
+  }
+}
