@@ -69,8 +69,6 @@ export function ImageGalleryManager({ images, onImagesChange, entityType, entity
     if (!files || files.length === 0) return
 
     const formData = new FormData()
-    formData.append("name", entityType === "sport_center" ? "Center" : "Field")
-    formData.append("address", "")
 
     Array.from(files).forEach((file) => {
       formData.append("images", file)
