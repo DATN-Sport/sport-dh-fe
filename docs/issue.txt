@@ -1,0 +1,88 @@
+1. Có nhiều phần xử lí lỗi response 400 500 đang gặp vấn đề:
+    - POST /user/  Khi có response là 400 - {"email":["user with this email already exists."]} hoặc {"username":["user with this username already exists."]}
+      thì không hiển thị được lỗi mà chỉ view ra được là Lỗi HTTP 400: -> thiếu rõ ràng
+    
+2. Backend đã có Update response data các api, hãy rà soát và update toàn bộ các phần có dùng api dưới đề UI xử lí được các response mới này, cũng như đỡ phải gọi api thừa để lấy thông tin thừa:
+- GET /sport_center/ : 
+    old response: 
+    [
+        {
+            "id": 1,
+            "owner": "2477eff7-cdc4-4bb6-bdfe-1c4d58322c21",
+            "images": [
+                {
+                    "id": 2,
+                    "file": "images/Screenshot_from_2025-10-13_16-42-31.png"
+                }
+            ],
+            "name": "Sân bóng đá Mini Hòa Xuân",
+            "address": "02 Nguyễn Phước Lan, Hoà Xuân, Cẩm Lệ, Đà Nẵng, Vietnam",
+            "created_at": "2025-10-16T13:48:14.098126+07:00"
+        }
+    ]
+    new response:
+    [
+        {
+            "id": 1,
+            "owner": {
+            "id": "2477eff7-cdc4-4bb6-bdfe-1c4d58322c21",
+            "full_name": "owner2",
+            "phone": null
+            },
+            "images": [
+                {
+                    "id": 2,
+                    "preview": "images/preview/Screenshot_from_2025-10-13_16-42-31_preview.jpg",
+                    "file": "images/Screenshot_from_2025-10-13_16-42-31.png"
+                }
+            ],
+            "name": "Sân bóng đá Mini Hòa Xuân",
+            "address": "02 Nguyễn Phước Lan, Hoà Xuân, Cẩm Lệ, Đà Nẵng, Vietnam",
+            "created_at": "2025-10-16T13:48:14.098126+07:00"
+        }
+    ]
+
+- GET /sport_field/ : 
+    old response:
+    [
+        {
+            "id": 1,
+            "sport_center": 1,
+            "images": [
+                {
+                    "id": 2,
+                    "file": "images/Screenshot_from_2025-10-13_16-42-31.png"
+                }
+            ],
+            "name": "A1",
+            "address": "02 Nguyễn Phước Lan, Hoà Xuân, Cẩm Lệ, Đà Nẵng, Vietnam",
+            "sport_type": "FOOTBALL",
+            "price": 100000,
+            "status": "ACTIVE",
+            "created_at": "2025-10-16T13:56:39.900780+07:00"
+        }
+    ]
+    new response:
+    [
+        {
+            "id": 1,
+            "sport_center": 1,
+            "center_info": {
+            "name": "Sân bóng đá Mini Hòa Xuân",
+            "address": "02 Nguyễn Phước Lan, Hoà Xuân, Cẩm Lệ, Đà Nẵng, Vietnam"
+            },
+            "images": [
+                {
+                    "id": 2,
+                    "preview": "images/preview/Screenshot_from_2025-10-13_16-42-31_preview.jpg",
+                    "file": "images/Screenshot_from_2025-10-13_16-42-31.png"
+                }
+            ],
+            "name": "A1",
+            "address": "02 Nguyễn Phước Lan, Hoà Xuân, Cẩm Lệ, Đà Nẵng, Vietnam",
+            "sport_type": "FOOTBALL",
+            "price": 100000,
+            "status": "ACTIVE",
+            "created_at": "2025-10-16T13:56:39.900780+07:00"
+        }
+    ]

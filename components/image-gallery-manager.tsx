@@ -37,6 +37,7 @@ export function ImageGalleryManager({ images, onImagesChange, entityType, entity
     if (file.startsWith("http")) return file
     return `${API_MEDIA_BASE_URL}/${file}`
   }
+  
 
   const handleDeleteImage = async (imageId: number) => {
     if (!confirm("Bạn có chắc chắn muốn xóa ảnh này?")) return

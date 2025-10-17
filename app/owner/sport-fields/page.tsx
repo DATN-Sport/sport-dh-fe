@@ -24,7 +24,6 @@ import { apiClient, type SportField, type SportCenter } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
 import { ImageGalleryManager } from "@/components/image-gallery-manager"
-import { getErrorMessage } from "@/lib/error-handler"
 
 export default function OwnerSportFieldsPage() {
   const { user } = useAuth()
@@ -55,10 +54,10 @@ export default function OwnerSportFieldsPage() {
         setSelectedCenter(data[0].id)
       }
     } catch (error) {
-      const { title, description } = getErrorMessage(error, "Không thể tải danh sách trung tâm thể thao")
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải danh sách trung tâm thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -71,10 +70,10 @@ export default function OwnerSportFieldsPage() {
       const data = await apiClient.getAllSportFields({ sport_center: selectedCenter })
       setSportFields(data)
     } catch (error) {
-      const { title, description } = getErrorMessage(error, "Không thể tải danh sách sân thể thao")
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải danh sách sân thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -140,13 +139,15 @@ export default function OwnerSportFieldsPage() {
       setImageFiles([])
       fetchSportFields()
     } catch (error) {
-      const { title, description } = getErrorMessage(
-        error,
-        editingField ? "Không thể cập nhật sân thể thao" : "Không thể tạo sân thể thao",
-      )
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : editingField
+            ? "Không thể cập nhật sân thể thao"
+            : "Không thể tạo sân thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -176,10 +177,10 @@ export default function OwnerSportFieldsPage() {
       })
       fetchSportFields()
     } catch (error) {
-      const { title, description } = getErrorMessage(error, "Không thể xóa sân thể thao")
+      const errorMessage = error instanceof Error ? error.message : "Không thể xóa sân thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }

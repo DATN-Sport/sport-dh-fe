@@ -40,12 +40,19 @@ export interface AuthResponse {
 
 export interface SportCenterImage {
   id: number
+  preview?: string
   file: string
 }
 
 export interface SportCenter {
   id: number
-  owner: string
+  owner:
+    | string
+    | {
+        id: string
+        full_name: string
+        phone: string | null
+      }
   images: SportCenterImage[]
   name: string
   address: string
@@ -54,12 +61,17 @@ export interface SportCenter {
 
 export interface SportFieldImage {
   id: number
+  preview?: string
   file: string
 }
 
 export interface SportField {
   id: number
   sport_center: number
+  center_info?: {
+    name: string
+    address: string
+  }
   images: SportFieldImage[]
   name: string
   address: string
@@ -72,6 +84,73 @@ export interface SportField {
 export interface ChatbotResponse {
   question: string
   answer: string
+}
+
+export interface BookingUser {
+  id: number
+  full_name: string
+  email: string
+  phone: string
+}
+
+export interface BookingSportField {
+  id: number
+  name: string
+  sport_type: string
+  address: string
+}
+
+export interface BookingRentalSlot {
+  id: number
+  name: string
+  time_slot: string
+}
+
+export interface Booking {
+  id: number
+  user: BookingUser | null
+  sport_field: BookingSportField
+  rental_slot: BookingRentalSlot
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  price: number
+  booking_date: string
+}
+
+export interface BookingListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: Booking[]
+}
+
+export interface BookingMiniListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: BookingMini[]
+}
+
+export interface BookingMini {
+  id: number
+  sport_field: number
+  rental_slot: string
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED"
+  booking_date: string
+}
+
+export interface RentalSlot {
+  id: number
+  name: string
+  time_slot: string
+  created_at: string
+  updated_at: string
+}
+
+export interface RentalSlotListResponse {
+  count: number
+  next: string | null
+  previous: string | null
+  results: RentalSlot[]
 }
 
 class ApiClient {
@@ -140,8 +219,23 @@ class ApiClient {
       const response = await fetch(url, config)
 
       if (!response.ok) {
-        // Try to parse error response
         const error = await response.json().catch(() => ({ detail: "An error occurred" }))
+
+        // Handle field-level validation errors (e.g., {"email": ["error message"], "username": ["error message"]})
+        if (error && typeof error === "object" && !error.detail && !error.message) {
+          const fieldErrors: string[] = []
+          for (const [field, messages] of Object.entries(error)) {
+            if (Array.isArray(messages)) {
+              messages.forEach((msg: string) => {
+                fieldErrors.push(`${field}: ${msg}`)
+              })
+            }
+          }
+          if (fieldErrors.length > 0) {
+            throw new Error(fieldErrors.join(", "))
+          }
+        }
+
         const errorMessage = error.detail || error.message || `HTTP ${response.status}: ${response.statusText}`
         throw new Error(errorMessage)
       }
@@ -328,6 +422,111 @@ class ApiClient {
       headers: this.getAuthHeader(),
     })
   }
+
+  async getBookings(params?: {
+    sport_field?: number
+    rental_slot?: number
+    price?: number
+    booking_date?: string
+    booking_date_after?: string
+    booking_date_before?: string
+    month?: number
+    year?: number
+    status?: string
+    limit?: number
+    offset?: number
+    ordering?: string
+  }): Promise<BookingListResponse> {
+    const queryParams = new URLSearchParams()
+    if (params?.sport_field) queryParams.append("sport_field", params.sport_field.toString())
+    if (params?.rental_slot) queryParams.append("rental_slot", params.rental_slot.toString())
+    if (params?.price) queryParams.append("price", params.price.toString())
+    if (params?.booking_date) queryParams.append("booking_date", params.booking_date)
+    if (params?.booking_date_after) queryParams.append("booking_date_after", params.booking_date_after)
+    if (params?.booking_date_before) queryParams.append("booking_date_before", params.booking_date_before)
+    if (params?.month) queryParams.append("month", params.month.toString())
+    if (params?.year) queryParams.append("year", params.year.toString())
+    if (params?.status) queryParams.append("status", params.status)
+    if (params?.limit) queryParams.append("limit", params.limit.toString())
+    if (params?.offset) queryParams.append("offset", params.offset.toString())
+    if (params?.ordering) queryParams.append("ordering", params.ordering)
+
+    return this.request<BookingListResponse>(`/booking/?${queryParams}`)
+  }
+
+  async getBookingsMini(params?: {
+    sport_field?: number
+    rental_slot?: number
+    booking_date_?: string
+    booking_date_after?: string
+    booking_date_before?: string
+    month?: number
+    year?: number
+    status?: string
+    limit?: number
+    offset?: number
+    ordering?: string
+  }): Promise<BookingMiniListResponse> {
+    const queryParams = new URLSearchParams()
+    if (params?.sport_field) queryParams.append("sport_field", params.sport_field.toString())
+    if (params?.rental_slot) queryParams.append("rental_slot", params.rental_slot.toString())
+    if (params?.booking_date_) queryParams.append("booking_date_", params.booking_date_)
+    if (params?.booking_date_after) queryParams.append("booking_date_after", params.booking_date_after)
+    if (params?.booking_date_before) queryParams.append("booking_date_before", params.booking_date_before)
+    if (params?.month) queryParams.append("month", params.month.toString())
+    if (params?.year) queryParams.append("year", params.year.toString())
+    if (params?.status) queryParams.append("status", params.status)
+    if (params?.limit) queryParams.append("limit", params.limit.toString())
+    if (params?.offset) queryParams.append("offset", params.offset.toString())
+    if (params?.ordering) queryParams.append("ordering", params.ordering)
+
+    return this.request<BookingMiniListResponse>(`/booking/list/?${queryParams}`)
+  }
+
+  async getBookingDetail(id: number): Promise<Booking> {
+    return this.request<Booking>(`/booking/${id}`)
+  }
+
+  async updateBooking(id: number, data: { status: "PENDING" | "CONFIRMED" }): Promise<Booking> {
+    const formData = this.objectToFormData(data as Record<string, any>)
+    return this.request<Booking>(`/booking/${id}`, {
+      method: "PATCH",
+      headers: this.getAuthHeader(),
+      body: formData,
+    })
+  }
+
+  async getRentalSlots(params?: {
+    name?: string
+    time_slot?: string
+    limit?: number
+    offset?: number
+    ordering?: string
+  }): Promise<RentalSlotListResponse> {
+    const queryParams = new URLSearchParams()
+    if (params?.name) queryParams.append("name", params.name)
+    if (params?.time_slot) queryParams.append("time_slot", params.time_slot)
+    if (params?.limit) queryParams.append("limit", params.limit.toString())
+    if (params?.offset) queryParams.append("offset", params.offset.toString())
+    if (params?.ordering) queryParams.append("ordering", params.ordering)
+
+    return this.request<RentalSlotListResponse>(`/rental_slot/?${queryParams}`)
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
+
+export const API_URL = API_BASE_URL
+
+export async function getSportFields(params?: { status?: string; sport_center?: number }) {
+  const fields = await apiClient.getAllSportFields(
+    params?.sport_center ? { sport_center: params.sport_center } : undefined,
+  )
+  // Filter by status if provided
+  if (params?.status) {
+    return {
+      results: fields.filter((f) => f.status === params.status),
+    }
+  }
+  return { results: fields }
+}

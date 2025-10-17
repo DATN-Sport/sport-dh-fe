@@ -137,9 +137,12 @@ export default function AdminSportCentersPage() {
     }
   }
 
-  const getOwnerName = (ownerId: string) => {
-    const owner = users.find((u) => u.id === ownerId)
-    return owner ? owner.full_name : ownerId
+  const getOwnerName = (owner: string | { id: string; full_name: string; phone: string | null }) => {
+    if (typeof owner === "string") {
+      const ownerUser = users.find((u) => u.id === owner)
+      return ownerUser ? ownerUser.full_name : owner
+    }
+    return owner.full_name
   }
 
   return (

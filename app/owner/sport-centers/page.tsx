@@ -22,7 +22,6 @@ import { useEffect, useState } from "react"
 import { apiClient, type SportCenter } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/auth-context"
-import { getErrorMessage } from "@/lib/error-handler"
 
 export default function OwnerSportCentersPage() {
   const { user } = useAuth()
@@ -42,10 +41,10 @@ export default function OwnerSportCentersPage() {
       const data = await apiClient.getAllSportCenters({ owner: user.id })
       setSportCenters(data)
     } catch (error) {
-      const { title, description } = getErrorMessage(error, "Không thể tải danh sách trung tâm thể thao")
+      const errorMessage = error instanceof Error ? error.message : "Không thể tải danh sách trung tâm thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -81,13 +80,15 @@ export default function OwnerSportCentersPage() {
       setFormData({ name: "", address: "" })
       fetchData()
     } catch (error) {
-      const { title, description } = getErrorMessage(
-        error,
-        editingCenter ? "Không thể cập nhật trung tâm thể thao" : "Không thể tạo trung tâm thể thao",
-      )
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : editingCenter
+            ? "Không thể cập nhật trung tâm thể thao"
+            : "Không thể tạo trung tâm thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }
@@ -113,10 +114,10 @@ export default function OwnerSportCentersPage() {
       })
       fetchData()
     } catch (error) {
-      const { title, description } = getErrorMessage(error, "Không thể xóa trung tâm thể thao")
+      const errorMessage = error instanceof Error ? error.message : "Không thể xóa trung tâm thể thao"
       toast({
-        title,
-        description,
+        title: "Lỗi",
+        description: errorMessage,
         variant: "destructive",
       })
     }

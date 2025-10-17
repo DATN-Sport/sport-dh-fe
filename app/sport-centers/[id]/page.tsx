@@ -19,6 +19,7 @@ export default function SportCenterDetailPage() {
   const [center, setCenter] = useState<SportCenter | null>(null)
   const [fields, setFields] = useState<SportField[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -43,6 +44,16 @@ export default function SportCenterDetailPage() {
 
   const getImageUrl = (filePath: string) => {
     return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${filePath}`
+  }
+
+  const getOptimizedImageUrl = (image: { preview?: string; file: string }) => {
+    // Use preview image if available for better performance
+    const imagePath = image.preview || image.file
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${imagePath}`
+  }
+
+  const getFullImageUrl = (image: { preview?: string; file: string }) => {
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${image.file}`
   }
 
   if (loading) {
@@ -88,18 +99,26 @@ export default function SportCenterDetailPage() {
               <>
                 <div className="overflow-hidden rounded-lg">
                   <img
-                    src={getImageUrl(center.images[0].file) || "/placeholder.svg"}
+                    src={getFullImageUrl(center.images[selectedImageIndex]) || "/placeholder.svg"}
                     alt={center.name}
                     className="h-96 w-full object-cover"
                   />
                 </div>
                 {center.images.length > 1 && (
                   <div className="grid grid-cols-4 gap-2">
-                    {center.images.slice(1, 5).map((img, idx) => (
-                      <div key={idx} className="overflow-hidden rounded-lg">
+                    {center.images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`cursor-pointer overflow-hidden rounded-lg transition-all ${
+                          selectedImageIndex === idx
+                            ? "ring-2 ring-primary ring-offset-2"
+                            : "opacity-70 hover:opacity-100"
+                        }`}
+                        onClick={() => setSelectedImageIndex(idx)}
+                      >
                         <img
-                          src={getImageUrl(img.file) || "/placeholder.svg"}
-                          alt={`${center.name} ${idx + 2}`}
+                          src={getOptimizedImageUrl(img) || "/placeholder.svg"}
+                          alt={`${center.name} ${idx + 1}`}
                           className="h-24 w-full object-cover"
                         />
                       </div>
@@ -152,7 +171,7 @@ export default function SportCenterDetailPage() {
                   <div className="relative h-48 overflow-hidden bg-muted">
                     {field.images && field.images.length > 0 ? (
                       <img
-                        src={getImageUrl(field.images[0].file) || "/placeholder.svg"}
+                        src={getOptimizedImageUrl(field.images[0]) || "/placeholder.svg"}
                         alt={field.name}
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
                       />
