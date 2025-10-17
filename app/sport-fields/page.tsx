@@ -27,16 +27,13 @@ export default function SportFieldsPage() {
   const itemsPerPage = 12
 
   useEffect(() => {
-    console.log("[v0] SportFieldsPage mounted, calling fetchFields")
     fetchFields()
   }, [currentPage, sortBy, priceFilter])
 
   const fetchFields = async () => {
     try {
-      console.log("[v0] Fetching sport fields from API...")
       setLoading(true)
       const data = await apiClient.getAllSportFields()
-      console.log("[v0] Received sport fields data:", data)
 
       // Apply search filter
       let filtered = data
@@ -67,7 +64,6 @@ export default function SportFieldsPage() {
       const startIndex = (currentPage - 1) * itemsPerPage
       const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage)
 
-      console.log("[v0] Setting fields state with:", paginatedData)
       setFields(paginatedData)
     } catch (error) {
       console.log("[v0] Error fetching sport fields:", error)
@@ -85,6 +81,12 @@ export default function SportFieldsPage() {
 
   const getImageUrl = (filePath: string) => {
     return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${filePath}`
+  }
+
+  const getOptimizedImageUrl = (image: { preview?: string; file: string }) => {
+    // Use preview image if available for better performance
+    const imagePath = image.preview || image.file
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${imagePath}`
   }
 
   return (
@@ -185,10 +187,11 @@ export default function SportFieldsPage() {
                       {field.images && field.images.length > 0 ? (
                         <>
                           <img
-                            src={getImageUrl(field.images[0].file) || "/placeholder.svg"}
+                            src={getOptimizedImageUrl(field.images[0]) || "/placeholder.svg"}
                             alt={field.name}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
+
                           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
                         </>
                       ) : (
@@ -204,6 +207,11 @@ export default function SportFieldsPage() {
                     </div>
                     <CardHeader>
                       <CardTitle className="line-clamp-1 text-lg">{field.name}</CardTitle>
+                      {field.center_info && (
+                        <CardDescription className="text-xs text-muted-foreground line-clamp-1">
+                          {field.center_info.name}
+                        </CardDescription>
+                      )}
                       <CardDescription className="text-base font-semibold text-accent">
                         {field.price.toLocaleString("vi-VN")}đ/giờ
                       </CardDescription>

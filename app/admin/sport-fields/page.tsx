@@ -179,8 +179,13 @@ export default function AdminSportFieldsPage() {
     }
   }
 
-  const getCenterName = (centerId: number) => {
-    return centers.find((c) => c.id === centerId)?.name || "N/A"
+  const getCenterName = (field: SportField) => {
+    // If center_info is available in the new API response, use it
+    if (field.center_info) {
+      return field.center_info.name
+    }
+    // Otherwise, look up from centers array (old behavior)
+    return centers.find((c) => c.id === field.sport_center)?.name || "N/A"
   }
 
   const getSportTypeLabel = (type: string) => {
@@ -217,7 +222,7 @@ export default function AdminSportFieldsPage() {
                       <div className="flex items-start justify-between">
                         <div>
                           <CardTitle>{field.name}</CardTitle>
-                          <CardDescription>{getCenterName(field.sport_center)}</CardDescription>
+                          <CardDescription>{getCenterName(field)}</CardDescription>
                         </div>
                         <Badge variant={field.status === "ACTIVE" ? "default" : "secondary"}>
                           {field.status === "ACTIVE" ? "Hoạt động" : "Không hoạt động"}

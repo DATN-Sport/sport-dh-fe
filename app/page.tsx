@@ -28,9 +28,9 @@ export default function HomePage() {
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Button size="lg" className="h-14 gap-2 px-8 text-lg font-bold" asChild>
-                  <Link href="/sport-fields">
+                  <Link href="/booking">
                     <Calendar className="h-5 w-5" />
-                    Tìm sân ngay
+                    Đặt sân ngay
                   </Link>
                 </Button>
                 <Button
@@ -139,7 +139,7 @@ export default function HomePage() {
               <h2 className="mb-6 text-4xl font-bold text-white md:text-5xl">Sẵn sàng chơi thể thao?</h2>
               <p className="mb-10 text-lg text-white/90 md:text-xl">Tìm sân phù hợp và đặt lịch ngay hôm nay</p>
               <Button size="lg" variant="secondary" className="h-14 gap-2 px-8 text-lg font-bold" asChild>
-                <Link href="/sport-fields">
+                <Link href="/booking">
                   <Calendar className="h-5 w-5" />
                   Bắt đầu tìm sân
                 </Link>

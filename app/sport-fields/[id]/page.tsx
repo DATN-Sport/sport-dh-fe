@@ -19,10 +19,21 @@ export default function SportFieldDetailPage() {
   const router = useRouter()
   const [field, setField] = useState<SportField | null>(null)
   const [loading, setLoading] = useState(true)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const { toast } = useToast()
 
   const getImageUrl = (filePath: string) => {
     return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${filePath}`
+  }
+
+  const getOptimizedImageUrl = (image: { preview?: string; file: string }) => {
+    // Use preview image if available for better performance
+    const imagePath = image.preview || image.file
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${imagePath}`
+  }
+
+  const getFullImageUrl = (image: { preview?: string; file: string }) => {
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${image.file}`
   }
 
   useEffect(() => {
@@ -85,18 +96,26 @@ export default function SportFieldDetailPage() {
               <>
                 <div className="overflow-hidden rounded-lg">
                   <img
-                    src={getImageUrl(field.images[0].file) || "/placeholder.svg"}
+                    src={getFullImageUrl(field.images[selectedImageIndex]) || "/placeholder.svg"}
                     alt={field.name}
                     className="h-96 w-full object-cover"
                   />
                 </div>
                 {field.images.length > 1 && (
                   <div className="grid grid-cols-4 gap-2">
-                    {field.images.slice(1, 5).map((img, idx) => (
-                      <div key={idx} className="overflow-hidden rounded-lg">
+                    {field.images.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`cursor-pointer overflow-hidden rounded-lg transition-all ${
+                          selectedImageIndex === idx
+                            ? "ring-2 ring-primary ring-offset-2"
+                            : "opacity-70 hover:opacity-100"
+                        }`}
+                        onClick={() => setSelectedImageIndex(idx)}
+                      >
                         <img
-                          src={getImageUrl(img.file) || "/placeholder.svg"}
-                          alt={`${field.name} ${idx + 2}`}
+                          src={getOptimizedImageUrl(img) || "/placeholder.svg"}
+                          alt={`${field.name} ${idx + 1}`}
                           className="h-24 w-full object-cover"
                         />
                       </div>
@@ -135,9 +154,16 @@ export default function SportFieldDetailPage() {
                     <Building2 className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Trung tâm</p>
-                      <Link href={`/sport-centers/${field.sport_center}`} className="font-medium hover:underline">
-                        Xem trung tâm
-                      </Link>
+                      {field.center_info ? (
+                        <div>
+                          <p className="font-medium">{field.center_info.name}</p>
+                          <p className="text-sm text-muted-foreground">{field.center_info.address}</p>
+                        </div>
+                      ) : (
+                        <Link href={`/sport-centers/${field.sport_center}`} className="font-medium hover:underline">
+                          Xem trung tâm
+                        </Link>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -152,12 +178,14 @@ export default function SportFieldDetailPage() {
                     <h3 className="font-semibold">Đặt sân</h3>
                   </div>
                   <p className="mb-4 text-sm text-muted-foreground">
-                    Chức năng đặt sân đang được phát triển. Vui lòng quay lại sau hoặc liên hệ trực tiếp với trung tâm.
+                    Chọn ngày và giờ để đặt sân. Hệ thống sẽ hiển thị các khung giờ trống.
                   </p>
-                  <Button className="w-full" disabled>
-                    <Clock className="mr-2 h-4 w-4" />
-                    Đặt sân (Sắp ra mắt)
-                  </Button>
+                  <Link href={`/booking?field=${field.id}`} className="block">
+                    <Button className="w-full">
+                      <Clock className="mr-2 h-4 w-4" />
+                      Đặt sân ngay
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>

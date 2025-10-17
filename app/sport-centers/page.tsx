@@ -73,6 +73,12 @@ export default function SportCentersPage() {
     return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${filePath}`
   }
 
+  const getOptimizedImageUrl = (image: { preview?: string; file: string }) => {
+    // Use preview image if available for better performance
+    const imagePath = image.preview || image.file
+    return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${imagePath}`
+  }
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -157,10 +163,11 @@ export default function SportCentersPage() {
                       {center.images && center.images.length > 0 ? (
                         <>
                           <img
-                            src={getImageUrl(center.images[0].file) || "/placeholder.svg"}
+                            src={getOptimizedImageUrl(center.images[0]) || "/placeholder.svg"}
                             alt={center.name}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
+
                           <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
                         </>
                       ) : (
