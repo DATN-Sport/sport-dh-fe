@@ -2,14 +2,15 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
-import { Activity } from "lucide-react"
+import Image from "next/image"
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -23,7 +24,26 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
+  const { register, isAuthenticated, loading: authLoading } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push("/")
+    }
+  }, [isAuthenticated, authLoading, router])
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-muted-foreground">Đang tải...</div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return null
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -59,9 +79,13 @@ export default function RegisterPage() {
         {/* Logo and Brand */}
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-              <Activity className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <Image
+              src="/logo-web.png"
+              alt="Sport DH Logo"
+              width={64}
+              height={64}
+              className="h-16 w-16 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Sport DH</h1>
           <p className="text-muted-foreground">Đặt sân thể thao tại Đà Nẵng</p>

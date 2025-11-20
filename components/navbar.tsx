@@ -3,8 +3,9 @@
 
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { Activity, LogOut, User, Settings, Building2, Calendar } from "lucide-react"
+import { LogOut, User, Settings, Building2, Calendar } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,9 +23,13 @@ export function Navbar() {
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Activity className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Image
+            src="/logo-web.png"
+            alt="Sport DH Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+          />
           <span className="text-xl font-bold">Sport DH</span>
         </Link>
 
