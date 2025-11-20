@@ -16,6 +16,11 @@ export const metadata: Metadata = {
   title: "Sport DH - Đặt Sân Thể Thao Đà Nẵng",
   description: "Nền tảng đặt thuê sân thể thao hàng đầu tại Đà Nẵng",
   generator: "v0.app",
+  icons: {
+    icon: "/logo-web.png",
+    shortcut: "/logo-web.png",
+    apple: "/logo-web.png",
+  },
 }
 
 export default function RootLayout({

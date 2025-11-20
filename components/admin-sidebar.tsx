@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Activity, LayoutDashboard, Users, Building2, MapPin } from "lucide-react"
+import { LayoutDashboard, Users, Building2, MapPin } from "lucide-react"
+import Image from "next/image"
 
 const navItems = [
   {
@@ -35,9 +36,13 @@ export function AdminSidebar() {
     <div className="flex h-full w-64 flex-col border-r bg-card">
       <div className="border-b p-6">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Activity className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <Image
+            src="/logo-web.png"
+            alt="Sport DH Logo"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+          />
           <div>
             <h2 className="text-lg font-bold">Sport DH</h2>
             <p className="text-xs text-muted-foreground">Quản trị</p>
