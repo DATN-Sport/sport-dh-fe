@@ -490,7 +490,7 @@ class ApiClient {
   async updateBooking(id: number, data: { status: "PENDING" | "CONFIRMED" }): Promise<Booking> {
     const formData = this.objectToFormData(data as Record<string, any>)
     return this.request<Booking>(`/booking/${id}`, {
-      method: "PATCH",
+      method: "PUT",
       headers: this.getAuthHeader(),
       body: formData,
     })
