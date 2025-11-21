@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ProtectedRoute } from "@/components/protected-route"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
@@ -39,6 +39,7 @@ export default function BookingPage() {
   const [loadingFields, setLoadingFields] = useState(true)
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const searchParams = useSearchParams();
 
   const currentUserId = typeof window !== "undefined" ? Number.parseInt(localStorage.getItem("user_id") || "0") : 0
 
@@ -51,6 +52,19 @@ export default function BookingPage() {
   const getFullImageUrl = (image: { preview?: string; file: string }) => {
     return `${process.env.NEXT_PUBLIC_MEDIA_API_URL}/${image.file}`
   }
+
+  useEffect(() => {
+    const field = searchParams.get("field");
+
+    let numberF: number;
+    if ((numberF = Number(field))) {
+      const findField = fields.find((field) => field.id === numberF);
+      if (!findField) return;
+
+      setSelectedField(findField);
+      setStep("date");
+    }
+  }, [fields]);
 
   // Fetch sport fields
   useEffect(() => {
@@ -135,7 +149,7 @@ export default function BookingPage() {
         booking_date_: selectedDate.toISOString().split("T")[0],
         ordering: "rental_slot",
       })
-      setBookings(response.results || [])
+      setBookings(response as unknown as Booking[] || [])
       setSelectedBooking(null)
     } catch (error) {
       console.error("Failed to update booking:", error)
@@ -272,7 +286,13 @@ export default function BookingPage() {
                       <CardTitle>{selectedField.name}</CardTitle>
                       <CardDescription>{selectedField.sport_type}</CardDescription>
                     </div>
-                    <Button variant="outline" onClick={() => setStep("field")}>
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setStep("field");
+                        router.replace("/booking");
+                      }}
+                    >
                       ← Đổi sân
                     </Button>
                   </div>
