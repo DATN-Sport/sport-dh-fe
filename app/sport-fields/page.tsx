@@ -6,20 +6,33 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
 import { Badge } from "@/components/ui/badge"
 import { apiClient } from "@/lib/api"
 import { handleApiError } from "@/lib/error-handler"
 import { useToast } from "@/hooks/use-toast"
-import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Calendar } from "lucide-react"
+import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Calendar, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import type { SportField } from "@/lib/api"
+
+const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
+const SPORT_TYPES = [
+  { value: "FOOTBALL", label: "Bóng đá" },
+  { value: "BADMINTON", label: "Cầu lông" },
+  { value: "TENNIS", label: "Tennis" },
+  { value: "PICK_A_BALL", label: "Pick a ball" },
+]
 
 export default function SportFieldsPage() {
   const [fields, setFields] = useState<SportField[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [centerNameFilter, setCenterNameFilter] = useState("")
+  const [sportTypeFilter, setSportTypeFilter] = useState("")
+  const [addressFilter, setAddressFilter] = useState("")
+  const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
   const [sortBy, setSortBy] = useState("name")
-  const [priceFilter, setPriceFilter] = useState("all")
+  const [maxPrice, setMaxPrice] = useState<number>(500000)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const { toast } = useToast()
@@ -28,43 +41,75 @@ export default function SportFieldsPage() {
 
   useEffect(() => {
     fetchFields()
-  }, [currentPage, sortBy, priceFilter])
+  }, [currentPage])
+
+  // Store raw data from API
+  const [rawFields, setRawFields] = useState<SportField[]>([])
+
+  // Apply client-side filters when sort or raw data changes
+  useEffect(() => {
+    // If no data, clear fields and reset pagination
+    if (rawFields.length === 0) {
+      setFields([])
+      setTotalPages(1)
+      return
+    }
+
+    // Apply sorting
+    const sorted = [...rawFields].sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name)
+      if (sortBy === "price-asc") return a.price - b.price
+      if (sortBy === "price-desc") return b.price - a.price
+      return 0
+    })
+
+    // Calculate pagination
+    setTotalPages(Math.ceil(sorted.length / itemsPerPage))
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage)
+
+    setFields(paginatedData)
+  }, [sortBy, rawFields, currentPage])
 
   const fetchFields = async () => {
     try {
       setLoading(true)
-      const data = await apiClient.getAllSportFields()
+      // Clear previous data immediately when starting new fetch
+      setRawFields([])
+      setFields([])
 
-      // Apply search filter
-      let filtered = data
-      if (searchQuery) {
-        filtered = data.filter((field) => field.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      // Build filter params - auto set status=ACTIVE for guest page
+      const params: {
+        status: string
+        center_name?: string
+        sport_type?: string
+        address?: string
+        price_lte?: number
+      } = {
+        status: "ACTIVE",
       }
 
-      // Apply price filter
-      if (priceFilter !== "all") {
-        filtered = filtered.filter((field) => {
-          if (priceFilter === "low") return field.price < 100000
-          if (priceFilter === "medium") return field.price >= 100000 && field.price < 200000
-          if (priceFilter === "high") return field.price >= 200000
-          return true
-        })
+      if (centerNameFilter.trim()) {
+        params.center_name = centerNameFilter.trim()
       }
 
-      // Apply sorting
-      const sorted = [...filtered].sort((a, b) => {
-        if (sortBy === "name") return a.name.localeCompare(b.name)
-        if (sortBy === "price-asc") return a.price - b.price
-        if (sortBy === "price-desc") return b.price - a.price
-        return 0
-      })
+      if (sportTypeFilter && sportTypeFilter.trim()) {
+        params.sport_type = sportTypeFilter.trim()
+      }
 
-      // Calculate pagination
-      setTotalPages(Math.ceil(sorted.length / itemsPerPage))
-      const startIndex = (currentPage - 1) * itemsPerPage
-      const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage)
+      if (addressFilter.trim()) {
+        params.address = addressFilter.trim()
+      }
 
-      setFields(paginatedData)
+      // Add price filter if maxPrice is set (always send price_lte)
+      if (maxPrice) {
+        params.price_lte = maxPrice
+      }
+
+      const data = await apiClient.getAllSportFields(params)
+      
+      // Store raw data for client-side filtering
+      setRawFields(data)
     } catch (error) {
       console.log("[v0] Error fetching sport fields:", error)
       const { title, description } = handleApiError(error)
@@ -77,6 +122,11 @@ export default function SportFieldsPage() {
   const handleSearch = () => {
     setCurrentPage(1)
     fetchFields()
+  }
+
+  const handleDistrictSelect = (district: string) => {
+    setAddressFilter(district)
+    setDistrictPopoverOpen(false)
   }
 
   const getImageUrl = (filePath: string) => {
@@ -106,18 +156,74 @@ export default function SportFieldsPage() {
       <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-4">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium">Tên trung tâm</label>
                 <Input
-                  placeholder="Tìm kiếm theo tên sân..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nhập tên trung tâm..."
+                  value={centerNameFilter}
+                  onChange={(e) => setCenterNameFilter(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pl-9"
                 />
               </div>
+
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium">Loại sân</label>
+                <Select value={sportTypeFilter || undefined} onValueChange={(value) => setSportTypeFilter(value || "")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Tất cả loại sân" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SPORT_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium">Địa chỉ</label>
+                <div className="relative">
+                  <Input
+                    placeholder="Nhập địa chỉ hoặc chọn quận..."
+                    value={addressFilter}
+                    onChange={(e) => setAddressFilter(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="pr-10"
+                  />
+                  <Popover open={districtPopoverOpen} onOpenChange={setDistrictPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="end">
+                      <div className="p-1">
+                        {DISTRICTS.map((district) => (
+                          <button
+                            key={district}
+                            type="button"
+                            onClick={() => handleDistrictSelect(district)}
+                            className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {district}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
               <Button onClick={handleSearch} className="font-bold">
+                <Search className="mr-2 h-4 w-4" />
                 Tìm kiếm
               </Button>
             </div>
@@ -128,17 +234,21 @@ export default function SportFieldsPage() {
                 <span className="text-sm font-bold">Bộ lọc:</span>
               </div>
 
-              <Select value={priceFilter} onValueChange={setPriceFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Giá" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả giá</SelectItem>
-                  <SelectItem value="low">Dưới 100k</SelectItem>
-                  <SelectItem value="medium">100k - 200k</SelectItem>
-                  <SelectItem value="high">Trên 200k</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-4 min-w-[300px]">
+                <div className="flex-1">
+                  <label className="mb-2 block text-sm font-medium">
+                    Giá tối đa: {maxPrice.toLocaleString("vi-VN")}đ
+                  </label>
+                  <Slider
+                    value={[maxPrice]}
+                    onValueChange={(value) => setMaxPrice(value[0])}
+                    min={50000}
+                    max={500000}
+                    step={10000}
+                    className="w-full"
+                  />
+                </div>
+              </div>
 
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-[180px]">

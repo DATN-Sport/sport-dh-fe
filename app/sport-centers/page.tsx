@@ -5,20 +5,23 @@ import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Badge } from "@/components/ui/badge"
 import { apiClient } from "@/lib/api"
 import { handleApiError } from "@/lib/error-handler"
 import { useToast } from "@/hooks/use-toast"
-import { MapPin, Search, SlidersHorizontal, ChevronLeft, ChevronRight, Building2 } from "lucide-react"
+import { MapPin, Search, ChevronLeft, ChevronRight, Building2, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import type { SportCenter } from "@/lib/api"
+
+const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 
 export default function SportCentersPage() {
   const [centers, setCenters] = useState<SportCenter[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortBy, setSortBy] = useState("name")
+  const [nameFilter, setNameFilter] = useState("")
+  const [addressFilter, setAddressFilter] = useState("")
+  const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const { toast } = useToast()
@@ -27,33 +30,29 @@ export default function SportCentersPage() {
 
   useEffect(() => {
     fetchCenters()
-  }, [currentPage, sortBy])
+  }, [currentPage])
 
   const fetchCenters = async () => {
     try {
       setLoading(true)
-      const data = await apiClient.getAllSportCenters()
-
-      // Apply search filter
-      let filtered = data
-      if (searchQuery) {
-        filtered = data.filter(
-          (center) =>
-            center.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            center.address.toLowerCase().includes(searchQuery.toLowerCase()),
-        )
+      
+      // Build filter params
+      const params: { name?: string; address?: string } = {}
+      if (nameFilter.trim()) {
+        params.name = nameFilter.trim()
+      }
+      
+      // Use address filter
+      if (addressFilter.trim()) {
+        params.address = addressFilter.trim()
       }
 
-      // Apply sorting
-      const sorted = [...filtered].sort((a, b) => {
-        if (sortBy === "name") return a.name.localeCompare(b.name)
-        return 0
-      })
+      const data = await apiClient.getAllSportCenters(params)
 
       // Calculate pagination
-      setTotalPages(Math.ceil(sorted.length / itemsPerPage))
+      setTotalPages(Math.ceil(data.length / itemsPerPage))
       const startIndex = (currentPage - 1) * itemsPerPage
-      const paginatedData = sorted.slice(startIndex, startIndex + itemsPerPage)
+      const paginatedData = data.slice(startIndex, startIndex + itemsPerPage)
 
       setCenters(paginatedData)
     } catch (error) {
@@ -67,6 +66,11 @@ export default function SportCentersPage() {
   const handleSearch = () => {
     setCurrentPage(1)
     fetchCenters()
+  }
+
+  const handleDistrictSelect = (district: string) => {
+    setAddressFilter(district)
+    setDistrictPopoverOpen(false)
   }
 
   const getImageUrl = (filePath: string) => {
@@ -99,33 +103,61 @@ export default function SportCentersPage() {
 
       <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium">Tên trung tâm</label>
                 <Input
-                  placeholder="Tìm kiếm theo tên hoặc địa chỉ..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Nhập tên trung tâm..."
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  className="pl-9"
                 />
               </div>
+              
+              <div className="flex-1">
+                <label className="mb-2 block text-sm font-medium">Địa chỉ</label>
+                <div className="relative">
+                  <Input
+                    placeholder="Nhập địa chỉ hoặc chọn quận..."
+                    value={addressFilter}
+                    onChange={(e) => setAddressFilter(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    className="pr-10"
+                  />
+                  <Popover open={districtPopoverOpen} onOpenChange={setDistrictPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="end">
+                      <div className="p-1">
+                        {DISTRICTS.map((district) => (
+                          <button
+                            key={district}
+                            type="button"
+                            onClick={() => handleDistrictSelect(district)}
+                            className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {district}
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
               <Button onClick={handleSearch} className="font-bold">
+                <Search className="mr-2 h-4 w-4" />
                 Tìm kiếm
               </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Sắp xếp" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Tên A-Z</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>
@@ -177,7 +209,7 @@ export default function SportCentersPage() {
                       )}
                       <div className="absolute right-3 top-3">
                         <Badge className="bg-primary font-bold text-primary-foreground">
-                          {center.sport_fields?.length || 0} sân
+                          {center.total_field || 0} sân
                         </Badge>
                       </div>
                     </div>
