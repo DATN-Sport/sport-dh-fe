@@ -56,6 +56,7 @@ export interface SportCenter {
   images: SportCenterImage[]
   name: string
   address: string
+  total_field: number
   created_at: string
 }
 
@@ -332,9 +333,14 @@ class ApiClient {
   }
 
   // Sport Center endpoints
-  async getAllSportCenters(params?: { owner?: string }): Promise<SportCenter[]> {
-    const queryString = params?.owner ? `?owner=${params.owner}` : ""
-    return this.request<SportCenter[]>(`/sport_center/${queryString}`, {
+  async getAllSportCenters(params?: { owner?: string; name?: string; address?: string }): Promise<SportCenter[]> {
+    const queryParams = new URLSearchParams()
+    if (params?.owner) queryParams.append("owner", params.owner)
+    if (params?.name) queryParams.append("name", params.name)
+    if (params?.address) queryParams.append("address", params.address)
+    
+    const queryString = queryParams.toString()
+    return this.request<SportCenter[]>(`/sport_center/${queryString ? `?${queryString}` : ""}`, {
       headers: this.getAuthHeader(),
     })
   }
@@ -371,9 +377,24 @@ class ApiClient {
   }
 
   // Sport Field endpoints
-  async getAllSportFields(params?: { sport_center?: number }): Promise<SportField[]> {
-    const queryString = params?.sport_center ? `?sport_center=${params.sport_center}` : ""
-    return this.request<SportField[]>(`/sport_field/${queryString}`, {
+  async getAllSportFields(params?: {
+    sport_center?: number
+    status?: string
+    center_name?: string
+    sport_type?: string
+    address?: string
+    price_lte?: number
+  }): Promise<SportField[]> {
+    const queryParams = new URLSearchParams()
+    if (params?.sport_center) queryParams.append("sport_center", params.sport_center.toString())
+    if (params?.status) queryParams.append("status", params.status)
+    if (params?.center_name) queryParams.append("center_name", params.center_name)
+    if (params?.sport_type) queryParams.append("sport_type", params.sport_type)
+    if (params?.address) queryParams.append("address", params.address)
+    if (params?.price_lte) queryParams.append("price_lte", params.price_lte.toString())
+
+    const queryString = queryParams.toString()
+    return this.request<SportField[]>(`/sport_field/${queryString ? `?${queryString}` : ""}`, {
       headers: this.getAuthHeader(),
     })
   }
@@ -518,15 +539,30 @@ export const apiClient = new ApiClient(API_BASE_URL)
 
 export const API_URL = API_BASE_URL
 
-export async function getSportFields(params?: { status?: string; sport_center?: number }) {
-  const fields = await apiClient.getAllSportFields(
-    params?.sport_center ? { sport_center: params.sport_center } : undefined,
-  )
-  // Filter by status if provided
-  if (params?.status) {
-    return {
-      results: fields.filter((f) => f.status === params.status),
-    }
-  }
+export async function getSportFields(params?: {
+  status?: string
+  sport_center?: number
+  center_name?: string
+  sport_type?: string
+  address?: string
+  price_lte?: number
+}) {
+  const apiParams: {
+    status?: string
+    sport_center?: number
+    center_name?: string
+    sport_type?: string
+    address?: string
+    price_lte?: number
+  } = {}
+
+  if (params?.sport_center) apiParams.sport_center = params.sport_center
+  if (params?.status) apiParams.status = params.status
+  if (params?.center_name) apiParams.center_name = params.center_name
+  if (params?.sport_type) apiParams.sport_type = params.sport_type
+  if (params?.address) apiParams.address = params.address
+  if (params?.price_lte) apiParams.price_lte = params.price_lte
+
+  const fields = await apiClient.getAllSportFields(Object.keys(apiParams).length > 0 ? apiParams : undefined)
   return { results: fields }
 }

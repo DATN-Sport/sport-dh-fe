@@ -6,13 +6,25 @@ import { ProtectedRoute } from "@/components/protected-route"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
 import { DateSelector } from "@/components/booking/date-selector"
 import { TimeSlotGrid } from "@/components/booking/time-slot-grid"
 import { BookingConfirmationModal } from "@/components/booking/booking-confirmation-modal"
 import { useToast } from "@/hooks/use-toast"
 import { getBookings, updateBooking, type Booking } from "@/lib/booking-api"
 import { getSportFields } from "@/lib/api"
-import { MapPin, DollarSign, Star } from "lucide-react"
+import { MapPin, DollarSign, Star, Search, ChevronDown, SlidersHorizontal } from "lucide-react"
+
+const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
+const SPORT_TYPES = [
+  { value: "FOOTBALL", label: "Bóng đá" },
+  { value: "BADMINTON", label: "Cầu lông" },
+  { value: "TENNIS", label: "Tennis" },
+  { value: "PICK_A_BALL", label: "Pick a ball" },
+]
 
 interface SportField {
   id: number
@@ -39,7 +51,14 @@ export default function BookingPage() {
   const [loadingFields, setLoadingFields] = useState(true)
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams()
+
+  // Filter states
+  const [centerNameFilter, setCenterNameFilter] = useState("")
+  const [sportTypeFilter, setSportTypeFilter] = useState("")
+  const [addressFilter, setAddressFilter] = useState("")
+  const [maxPrice, setMaxPrice] = useState<number>(500000)
+  const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
 
   const currentUserId = typeof window !== "undefined" ? Number.parseInt(localStorage.getItem("user_id") || "0") : 0
 
@@ -67,26 +86,66 @@ export default function BookingPage() {
   }, [fields]);
 
   // Fetch sport fields
-  useEffect(() => {
-    const fetchFields = async () => {
-      try {
-        setLoadingFields(true)
-        const response = await getSportFields({ status: "ACTIVE" })
-        setFields(response.results || [])
-      } catch (error) {
-        console.error("Failed to fetch fields:", error)
-        toast({
-          title: "Lỗi",
-          description: "Không thể tải danh sách sân",
-          variant: "destructive",
-        })
-      } finally {
-        setLoadingFields(false)
+  const fetchFields = async () => {
+    try {
+      setLoadingFields(true)
+      // Clear previous data immediately when starting new fetch
+      setFields([])
+      
+      // Build filter params
+      const params: {
+        status: string
+        center_name?: string
+        sport_type?: string
+        address?: string
+        price_lte?: number
+      } = {
+        status: "ACTIVE",
       }
-    }
 
+      if (centerNameFilter.trim()) {
+        params.center_name = centerNameFilter.trim()
+      }
+
+      if (sportTypeFilter && sportTypeFilter.trim()) {
+        params.sport_type = sportTypeFilter.trim()
+      }
+
+      if (addressFilter.trim()) {
+        params.address = addressFilter.trim()
+      }
+
+      // Add price filter if maxPrice is set
+      if (maxPrice) {
+        params.price_lte = maxPrice
+      }
+
+      const response = await getSportFields(params)
+      setFields(response.results || [])
+    } catch (error) {
+      console.error("Failed to fetch fields:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể tải danh sách sân",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingFields(false)
+    }
+  }
+
+  useEffect(() => {
     fetchFields()
   }, [toast])
+
+  const handleSearch = () => {
+    fetchFields()
+  }
+
+  const handleDistrictSelect = (district: string) => {
+    setAddressFilter(district)
+    setDistrictPopoverOpen(false)
+  }
 
   // Fetch bookings when field and date change
   useEffect(() => {
@@ -174,6 +233,112 @@ export default function BookingPage() {
             <h1 className="text-4xl font-bold">📅 Đặt sân thể thao</h1>
             <p className="mt-2 text-muted-foreground">Chọn sân, ngày, giờ và xác nhận đặt sân của bạn</p>
           </div>
+
+          {/* Filter Section - Only show when selecting field */}
+          {step === "field" && (
+            <div className="mb-8 space-y-4">
+              <section className="border-b border-border/50 bg-card/50 py-6 backdrop-blur-sm">
+                <div className="container mx-auto px-4">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-end">
+                      <div className="flex-1">
+                        <label className="mb-2 block text-sm font-medium">Tên trung tâm</label>
+                        <Input
+                          placeholder="Nhập tên trung tâm..."
+                          value={centerNameFilter}
+                          onChange={(e) => setCenterNameFilter(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <label className="mb-2 block text-sm font-medium">Loại sân</label>
+                        <Select value={sportTypeFilter || undefined} onValueChange={(value) => setSportTypeFilter(value || "")}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Tất cả loại sân" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {SPORT_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="flex-1">
+                        <label className="mb-2 block text-sm font-medium">Địa chỉ</label>
+                        <div className="relative">
+                          <Input
+                            placeholder="Nhập địa chỉ hoặc chọn quận..."
+                            value={addressFilter}
+                            onChange={(e) => setAddressFilter(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                            className="pr-10"
+                          />
+                          <Popover open={districtPopoverOpen} onOpenChange={setDistrictPopoverOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[200px] p-0" align="end">
+                              <div className="p-1">
+                                {DISTRICTS.map((district) => (
+                                  <button
+                                    key={district}
+                                    type="button"
+                                    onClick={() => handleDistrictSelect(district)}
+                                    className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                                  >
+                                    {district}
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                      </div>
+
+                      <Button onClick={handleSearch} className="font-bold">
+                        <Search className="mr-2 h-4 w-4" />
+                        Tìm kiếm
+                      </Button>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-bold">Bộ lọc:</span>
+                      </div>
+
+                      <div className="flex items-center gap-4 min-w-[300px]">
+                        <div className="flex-1">
+                          <label className="mb-2 block text-sm font-medium">
+                            Giá tối đa: {maxPrice.toLocaleString("vi-VN")}đ
+                          </label>
+                          <Slider
+                            value={[maxPrice]}
+                            onValueChange={(value) => setMaxPrice(value[0])}
+                            min={50000}
+                            max={500000}
+                            step={10000}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          )}
 
           {/* Step Indicator */}
           <div className="mb-8 flex items-center justify-between">
