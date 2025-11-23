@@ -99,6 +99,11 @@ export interface BookingSportField {
   name: string
   sport_type: string
   address: string
+  sport_center?: {
+    id: number
+    name: string
+    owner: string
+  }
 }
 
 export interface BookingRentalSlot {
@@ -473,6 +478,42 @@ class ApiClient {
     if (params?.ordering) queryParams.append("ordering", params.ordering)
 
     return this.request<BookingListResponse>(`/booking/?${queryParams}`)
+  }
+
+  // Booking manage endpoints (admin/owner)
+  async getBookingManage(params?: {
+    limit?: number
+    offset?: number
+    owner?: string
+    sport_center?: number
+    sport_field?: number
+    rental_slot?: number
+    status?: "PENDING" | "CONFIRMED"
+    booking_date_after?: string
+    booking_date_before?: string
+    booking_date_?: string
+    month?: number
+    year?: number
+    user?: string
+  }): Promise<BookingListResponse> {
+    const queryParams = new URLSearchParams()
+    if (params?.limit !== undefined) queryParams.append("limit", String(params.limit))
+    if (params?.offset !== undefined) queryParams.append("offset", String(params.offset))
+    if (params?.owner) queryParams.append("owner", params.owner)
+    if (params?.sport_center !== undefined) queryParams.append("sport_center", String(params.sport_center))
+    if (params?.sport_field !== undefined) queryParams.append("sport_field", String(params.sport_field))
+    if (params?.rental_slot !== undefined) queryParams.append("rental_slot", String(params.rental_slot))
+    if (params?.status) queryParams.append("status", params.status)
+    if (params?.booking_date_after) queryParams.append("booking_date_after", params.booking_date_after)
+    if (params?.booking_date_before) queryParams.append("booking_date_before", params.booking_date_before)
+    if (params?.booking_date_) queryParams.append("booking_date_", params.booking_date_)
+    if (params?.month !== undefined) queryParams.append("month", String(params.month))
+    if (params?.year !== undefined) queryParams.append("year", String(params.year))
+    if (params?.user) queryParams.append("user", params.user)
+
+    return this.request<BookingListResponse>(`/booking_manage/?${queryParams.toString()}`, {
+      headers: this.getAuthHeader(),
+    })
   }
 
   async getBookingsMini(params?: {
