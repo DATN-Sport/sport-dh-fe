@@ -23,15 +23,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user is logged in on mount
+    // Check if user is authenticated on mount by calling backend
     const checkAuth = async () => {
       try {
-        const storedUser = localStorage.getItem("user")
-        if (storedUser) {
-          setUser(JSON.parse(storedUser))
+        const token = localStorage.getItem("access_token")
+        if (!token) {
+          // No token -> not authenticated
+          setUser(null)
+          return
         }
+
+        // Validate token with backend and sync latest user info
+        const me = await apiClient.getCurrentUser()
+        setUser(me)
+        localStorage.setItem("user", JSON.stringify(me))
       } catch (error) {
         console.error("Auth check failed:", error)
+        // On any failure, clear auth state
+        setUser(null)
+        localStorage.removeItem("user")
+        localStorage.removeItem("access_token")
       } finally {
         setLoading(false)
       }

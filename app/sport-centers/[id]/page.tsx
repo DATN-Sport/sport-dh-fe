@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { apiClient } from "@/lib/api"
 import { handleApiError } from "@/lib/error-handler"
 import { useToast } from "@/hooks/use-toast"
-import { MapPin, ArrowLeft, Calendar, DollarSign } from "lucide-react"
+import { MapPin, ArrowLeft, Calendar, DollarSign, Clock } from "lucide-react"
 import Link from "next/link"
 import type { SportCenter, SportField } from "@/lib/api"
 
@@ -189,9 +189,17 @@ export default function SportCenterDetailPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardFooter>
-                    <Button asChild className="w-full bg-transparent" variant="outline">
-                      <Link href={`/sport-fields/${field.id}`}>Xem chi tiết</Link>
-                    </Button>
+                    <div className="flex w-full gap-2">
+                      <Button asChild className="w-1/2 bg-transparent" variant="outline">
+                        <Link href={`/sport-fields/${field.id}`}>Xem chi tiết</Link>
+                      </Button>
+                      <Button asChild className="w-1/2" variant="destructive">
+                        <Link href={`/booking?field=${field.id}`} className="inline-flex items-center justify-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Đặt sân ngay
+                        </Link>
+                      </Button>
+                    </div>
                   </CardFooter>
                 </Card>
               ))}
