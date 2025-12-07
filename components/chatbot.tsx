@@ -30,6 +30,7 @@ export function Chatbot() {
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -55,7 +56,10 @@ export function Chatbot() {
     setLoading(true)
 
     try {
-      const response = await apiClient.chatbot(input)
+      const response = await apiClient.chatbot(input, sessionId ?? undefined)
+      if (response.session_id) {
+        setSessionId(response.session_id)
+      }
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "bot",

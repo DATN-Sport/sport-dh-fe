@@ -83,6 +83,7 @@ export interface SportField {
 }
 
 export interface ChatbotResponse {
+  session_id: string
   question: string
   answer: string
 }
@@ -442,8 +443,13 @@ class ApiClient {
     })
   }
 
-  async chatbot(question: string): Promise<ChatbotResponse> {
-    return this.request<ChatbotResponse>(`/chatbot/?q=${encodeURIComponent(question)}`, {
+  async chatbot(question: string, sessionId?: string): Promise<ChatbotResponse> {
+    const queryParams = new URLSearchParams({ q: question })
+    if (sessionId) {
+      queryParams.append("session_id", sessionId)
+    }
+
+    return this.request<ChatbotResponse>(`/chatbot/?${queryParams.toString()}`, {
       method: "POST",
       headers: this.getAuthHeader(),
     })
