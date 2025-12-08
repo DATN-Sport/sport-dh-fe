@@ -336,8 +336,7 @@ export default function OwnerSportFieldsPage() {
                           <SelectItem value="FOOTBALL">Bóng đá</SelectItem>
                           <SelectItem value="BADMINTON">Cầu lông</SelectItem>
                           <SelectItem value="TENNIS">Quần vợt</SelectItem>
-                          <SelectItem value="BASKETBALL">Bóng rổ</SelectItem>
-                          <SelectItem value="VOLLEYBALL">Bóng chuyền</SelectItem>
+                          <SelectItem value="PICK_A_BALL">Pick a ball</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
