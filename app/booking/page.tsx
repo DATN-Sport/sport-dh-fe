@@ -16,7 +16,7 @@ import { BookingConfirmationModal } from "@/components/booking/booking-confirmat
 import { useToast } from "@/hooks/use-toast"
 import { getBookings, updateBooking, type Booking } from "@/lib/booking-api"
 import { getSportFields } from "@/lib/api"
-import { MapPin, DollarSign, Star, Search, ChevronDown, SlidersHorizontal } from "lucide-react"
+import { MapPin, DollarSign, Star, Search, ChevronDown, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react"
 
 const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 const SPORT_TYPES = [
@@ -33,6 +33,10 @@ interface SportField {
   address: string
   price: number
   rating?: number
+  center_info?: {
+    name: string
+    address: string
+  }
   images?: Array<{ image?: string; preview?: string }>
 }
 
@@ -47,6 +51,7 @@ export default function BookingPage() {
   const [confirmingBooking, setConfirmingBooking] = useState<Booking | null>(null)
 
   const [fields, setFields] = useState<SportField[]>([])
+  const [rawFields, setRawFields] = useState<SportField[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loadingFields, setLoadingFields] = useState(true)
   const [loadingBookings, setLoadingBookings] = useState(false)
@@ -57,8 +62,12 @@ export default function BookingPage() {
   const [centerNameFilter, setCenterNameFilter] = useState("")
   const [sportTypeFilter, setSportTypeFilter] = useState("")
   const [addressFilter, setAddressFilter] = useState("")
-  const [maxPrice, setMaxPrice] = useState<number>(500000)
+  const [maxPrice, setMaxPrice] = useState<number>(1000000)
   const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+
+  const itemsPerPage = 9
 
   const currentUserId = typeof window !== "undefined" ? Number.parseInt(localStorage.getItem("user_id") || "0") : 0
 
@@ -73,23 +82,25 @@ export default function BookingPage() {
   }
 
   useEffect(() => {
-    const field = searchParams.get("field");
+    const field = searchParams.get("field")
+    if (!field) return
 
-    let numberF: number;
-    if ((numberF = Number(field))) {
-      const findField = fields.find((field) => field.id === numberF);
-      if (!findField) return;
+    const numberF = Number(field)
+    if (!numberF) return
 
-      setSelectedField(findField);
-      setStep("date");
-    }
-  }, [fields]);
+    const findField = rawFields.find((f) => f.id === numberF)
+    if (!findField) return
+
+    setSelectedField(findField)
+    setStep("date")
+  }, [rawFields, searchParams])
 
   // Fetch sport fields
   const fetchFields = async () => {
     try {
       setLoadingFields(true)
       // Clear previous data immediately when starting new fetch
+      setRawFields([])
       setFields([])
       
       // Build filter params
@@ -121,7 +132,8 @@ export default function BookingPage() {
       }
 
       const response = await getSportFields(params)
-      setFields(response.results || [])
+      const list = response.results || []
+      setRawFields(list)
     } catch (error) {
       console.error("Failed to fetch fields:", error)
       toast({
@@ -138,7 +150,29 @@ export default function BookingPage() {
     fetchFields()
   }, [toast])
 
+  // Apply pagination to raw fields
+  useEffect(() => {
+    if (rawFields.length === 0) {
+      setFields([])
+      setTotalPages(1)
+      return
+    }
+
+    const pages = Math.max(1, Math.ceil(rawFields.length / itemsPerPage))
+    setTotalPages(pages)
+
+    const safePage = Math.min(currentPage, pages)
+    if (safePage !== currentPage) {
+      setCurrentPage(safePage)
+    }
+
+    const startIndex = (safePage - 1) * itemsPerPage
+    const paginated = rawFields.slice(startIndex, startIndex + itemsPerPage)
+    setFields(paginated)
+  }, [rawFields, currentPage])
+
   const handleSearch = () => {
+    setCurrentPage(1)
     fetchFields()
   }
 
@@ -318,7 +352,7 @@ export default function BookingPage() {
                         <span className="text-sm font-bold">Bộ lọc:</span>
                       </div>
 
-                      <div className="flex items-center gap-4 min-w-[300px]">
+                      <div className="flex items-end gap-4 min-w-[360px] max-w-xl">
                         <div className="flex-1">
                           <label className="mb-2 block text-sm font-medium">
                             Giá tối đa: {maxPrice.toLocaleString("vi-VN")}đ
@@ -327,9 +361,24 @@ export default function BookingPage() {
                             value={[maxPrice]}
                             onValueChange={(value) => setMaxPrice(value[0])}
                             min={50000}
-                            max={500000}
-                            step={10000}
+                            max={1000000}
+                            step={50000}
                             className="w-full"
+                          />
+                        </div>
+                        <div className="w-32">
+                          <label className="mb-2 block text-xs font-medium text-muted-foreground">Nhập giá</label>
+                          <Input
+                            type="number"
+                            min={50000}
+                            max={1000000}
+                            step={50000}
+                            value={maxPrice}
+                            onChange={(e) => {
+                              const value = Number(e.target.value) || 0
+                              const clamped = Math.min(1000000, Math.max(50000, value))
+                              setMaxPrice(clamped)
+                            }}
                           />
                         </div>
                       </div>
@@ -392,49 +441,87 @@ export default function BookingPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {fields.map((field) => (
-                      <Card
-                        key={field.id}
-                        className="group cursor-pointer border-2 transition-all hover:border-primary hover:shadow-lg"
-                        onClick={() => handleFieldSelect(field)}
-                      >
-                        <div className="relative h-40 overflow-hidden rounded-t-lg bg-muted">
-                          {field.images && field.images.length > 0 ? (
-                            <img
-                              // src={field.images[0].preview || field.images[0].image}
-                              // src={getOptimizedImageUrl(field.images[0]) || "/placeholder.svg"}
-                              src={getFullImageUrl(field.images[0]) || "/placeholder.svg"}
-                              alt={field.name}
-                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center text-4xl">🏟️</div>
-                          )}
-                        </div>
-                        <CardHeader>
-                          <CardTitle className="line-clamp-2">{field.name}</CardTitle>
-                          <CardDescription>{field.sport_type}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="flex items-center gap-2">
-                            <DollarSign className="h-4 w-4 text-primary" />
-                            <span className="font-semibold text-primary">{field.price.toLocaleString()}đ/giờ</span>
+                  <>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {fields.map((field) => (
+                        <Card
+                          key={field.id}
+                          className="group cursor-pointer border-2 transition-all hover:border-primary hover:shadow-lg"
+                          onClick={() => handleFieldSelect(field)}
+                        >
+                          <div className="relative h-40 overflow-hidden rounded-t-lg bg-muted">
+                            {field.images && field.images.length > 0 ? (
+                              <img
+                                // src={field.images[0].preview || field.images[0].image}
+                                // src={getOptimizedImageUrl(field.images[0]) || "/placeholder.svg"}
+                                src={getFullImageUrl(field.images[0]) || "/placeholder.svg"}
+                                alt={field.name}
+                                className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-4xl">🏟️</div>
+                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground line-clamp-1">{field.address}</span>
-                          </div>
-                          {field.rating && (
-                            <div className="flex items-center gap-1">
-                              <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                              <span className="text-sm font-medium">{field.rating.toFixed(1)}</span>
+                          <CardHeader>
+                            <CardTitle className="line-clamp-2">{field.name}</CardTitle>
+                            <CardDescription>
+                              {field.center_info?.name ? `${field.center_info.name} • ${field.sport_type}` : field.sport_type}
+                            </CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-primary" />
+                              <span className="font-semibold text-primary">{field.price.toLocaleString()}đ/giờ</span>
                             </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground line-clamp-1">{field.address}</span>
+                            </div>
+                            {field.rating && (
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                <span className="text-sm font-medium">{field.rating.toFixed(1)}</span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {totalPages > 1 && (
+                      <div className="mt-6 flex items-center justify-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {[...Array(totalPages)].map((_, i) => (
+                            <Button
+                              key={i}
+                              variant={currentPage === i + 1 ? "default" : "outline"}
+                              size="icon"
+                              onClick={() => setCurrentPage(i + 1)}
+                              className={currentPage === i + 1 ? "font-bold" : ""}
+                            >
+                              {i + 1}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -449,7 +536,11 @@ export default function BookingPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>{selectedField.name}</CardTitle>
-                      <CardDescription>{selectedField.sport_type}</CardDescription>
+                      <CardDescription>
+                        {selectedField.center_info?.name
+                          ? `${selectedField.center_info.name} • ${selectedField.sport_type}`
+                          : selectedField.sport_type}
+                      </CardDescription>
                     </div>
                     <Button 
                       variant="outline"

@@ -6,11 +6,11 @@ import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Maximize2, MessageCircle, Minimize2, Send, X } from "lucide-react"
+import { Loader2, MessageCircle, Send, X, Maximize2 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
+import { useRouter } from "next/navigation"
 
 interface Message {
   id: string
@@ -20,8 +20,8 @@ interface Message {
 }
 
 export function Chatbot() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<"compact" | "full">("compact")
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -94,8 +94,6 @@ export function Chatbot() {
     }
   }
 
-  const isFullView = viewMode === "full"
-
   return (
     <>
       {/* Floating Button */}
@@ -109,56 +107,42 @@ export function Chatbot() {
         </Button>
       )}
 
-      {/* Chat Window */}
+      {/* Chat Window - mini floating */}
       {isOpen && (
         <Card
           className={cn(
-            "fixed z-50 shadow-2xl transition-all duration-200 ease-out",
+            "fixed bottom-4 right-4 z-50 w-[min(420px,calc(100%-2rem))] max-h-[70vh] overflow-hidden shadow-2xl transition-all duration-200 ease-out",
             "flex flex-col bg-background",
-            isFullView
-              ? "inset-4 mx-auto h-[calc(100vh-2rem)] w-[min(1200px,calc(100%-2rem))]"
-              : "bottom-6 right-6 h-[560px] w-96",
           )}
         >
           <CardHeader className="border-b pb-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-1">
-                <CardTitle className="text-lg">Trợ lý AI Sport DH</CardTitle>
-                <CardDescription>Hỏi tôi về sân thể thao</CardDescription>
-                <Tabs
-                  value={viewMode}
-                  onValueChange={(value) => setViewMode(value as "compact" | "full")}
-                  className="mt-3"
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="compact">Thu gọn</TabsTrigger>
-                    <TabsTrigger value="full">Full chat</TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <CardTitle className="text-lg">Trợ lý AI Sport DH</CardTitle>
+                  <CardDescription>Hỏi tôi về sân thể thao</CardDescription>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 flex items-center gap-1 px-0 text-xs text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      setIsOpen(false)
+                      router.push("/chat")
+                    }}
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                    <span>Mở full chat</span>
+                  </Button>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setViewMode(isFullView ? "compact" : "full")}
-                  aria-label={isFullView ? "Thu nhỏ cửa sổ chat" : "Mở full cửa sổ chat"}
-                >
-                  {isFullView ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} aria-label="Đóng chatbot">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col p-0">
+          <CardContent className="flex min-h-0 flex-1 flex-col p-0">
             {/* Messages */}
-            <div
-              className={cn(
-                "flex-1 space-y-4 overflow-y-auto p-4",
-                isFullView ? "min-h-0" : "min-h-[384px]",
-              )}
-            >
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
               {messages.map((message) => (
                 <div key={message.id} className={cn("flex", message.type === "user" ? "justify-end" : "justify-start")}>
                   <div
@@ -168,7 +152,7 @@ export function Chatbot() {
                     )}
                   >
                     {message.type === "bot" ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <div className="prose prose-sm max-w-none break-words dark:prose-invert [&_pre]:overflow-x-auto">
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
                     ) : (
