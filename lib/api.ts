@@ -76,13 +76,14 @@ export interface SportField {
   images: SportFieldImage[]
   name: string
   address: string
-  sport_type: "FOOTBALL" | "BADMINTON" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL"
+  sport_type: "FOOTBALL" | "BADMINTON" | "TENNIS" | "PICK_A_BALL"
   price: number
   status: "ACTIVE" | "INACTIVE"
   created_at: string
 }
 
 export interface ChatbotResponse {
+  session_id: string
   question: string
   answer: string
 }
@@ -442,8 +443,13 @@ class ApiClient {
     })
   }
 
-  async chatbot(question: string): Promise<ChatbotResponse> {
-    return this.request<ChatbotResponse>(`/chatbot/?q=${encodeURIComponent(question)}`, {
+  async chatbot(question: string, sessionId?: string): Promise<ChatbotResponse> {
+    const queryParams = new URLSearchParams({ q: question })
+    if (sessionId) {
+      queryParams.append("session_id", sessionId)
+    }
+
+    return this.request<ChatbotResponse>(`/chatbot/?${queryParams.toString()}`, {
       method: "POST",
       headers: this.getAuthHeader(),
     })

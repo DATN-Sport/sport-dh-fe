@@ -11,7 +11,14 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== "ADMIN")) {
+    if (loading) return
+
+    if (!isAuthenticated) {
+      router.push("/login")
+      return
+    }
+
+    if (user?.role !== "ADMIN") {
       router.push("/")
     }
   }, [isAuthenticated, loading, user, router])

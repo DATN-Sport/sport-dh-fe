@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Building2, MapPin } from "lucide-react"
+import { LayoutDashboard, Building2, MapPin, Calendar } from "lucide-react"
 import Image from "next/image"
 
 const navItems = [
@@ -21,6 +21,11 @@ const navItems = [
     title: "Sân thể thao",
     href: "/owner/sport-fields",
     icon: MapPin,
+  },
+  {
+    title: "Quản lý booking",
+    href: "/owner/booking-manage",
+    icon: Calendar,
   },
 ]
 

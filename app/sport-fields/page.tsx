@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Search, SlidersHorizontal, ChevronLeft, ChevronRight, Calendar, ChevronDown, Clock } from "lucide-react"
 import Link from "next/link"
 import type { SportField } from "@/lib/api"
+import { ProtectedRoute } from "@/components/protected-route"
 
 const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 const SPORT_TYPES = [
@@ -140,10 +141,11 @@ export default function SportFieldsPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <ProtectedRoute>
+      <div className="min-h-screen">
+        <Navbar />
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-background to-accent/20 py-20">
+        <section className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-background to-accent/20 py-20">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-4xl text-center">
@@ -151,9 +153,9 @@ export default function SportFieldsPage() {
             <p className="text-pretty text-xl text-muted-foreground">Khám phá và đặt sân phù hợp với nhu cầu của bạn</p>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
+        <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -263,9 +265,9 @@ export default function SportFieldsPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section className="py-12">
+        <section className="py-12">
         <div className="container mx-auto px-4">
           {loading ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -379,7 +381,8 @@ export default function SportFieldsPage() {
             </>
           )}
         </div>
-      </section>
-    </div>
+        </section>
+      </div>
+    </ProtectedRoute>
   )
 }

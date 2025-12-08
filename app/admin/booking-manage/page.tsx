@@ -215,7 +215,6 @@ export default function AdminBookingManagePage() {
                       placeholder="VD: 1"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label>Hiển thị mỗi trang (limit)</Label>
                     <Input
