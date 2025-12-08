@@ -30,7 +30,13 @@ export function Chatbot() {
   ])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const normalizeAnswer = (answer: string) => {
+    const cleaned = answer.replace(/<think>[\s\S]*?<\/think>/gi, "").trim()
+    return cleaned || answer
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -55,11 +61,14 @@ export function Chatbot() {
     setLoading(true)
 
     try {
-      const response = await apiClient.chatbot(input)
+      const response = await apiClient.chatbot(input, sessionId ?? undefined)
+      if (response.session_id) {
+        setSessionId(response.session_id)
+      }
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: "bot",
-        content: response.answer,
+        content: normalizeAnswer(response.answer),
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, botMessage])
@@ -115,7 +124,7 @@ export function Chatbot() {
                 <div key={message.id} className={cn("flex", message.type === "user" ? "justify-end" : "justify-start")}>
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-lg px-4 py-2",
+                      "max-w-[80%] rounded-lg px-4 py-2 break-words whitespace-pre-wrap",
                       message.type === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
                     )}
                   >
