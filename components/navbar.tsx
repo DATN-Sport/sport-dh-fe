@@ -3,7 +3,7 @@
 
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
-import { LogOut, User, Settings, Building2, Calendar } from "lucide-react"
+import { LogOut, User, Settings, Building2, Calendar, History } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -44,6 +44,12 @@ export function Navbar() {
             <Link href="/sport-fields" className="gap-2">
               <Calendar className="h-4 w-4" />
               Sân thể thao
+            </Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link href="/booking-history" className="gap-2">
+              <History className="h-4 w-4" />
+              Lịch Sử Đặt Sân
             </Link>
           </Button>
         </div>

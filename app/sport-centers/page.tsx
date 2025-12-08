@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { MapPin, Search, ChevronLeft, ChevronRight, Building2, ChevronDown } from "lucide-react"
 import Link from "next/link"
 import type { SportCenter } from "@/lib/api"
+import { ProtectedRoute } from "@/components/protected-route"
 
 const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 
@@ -84,10 +85,11 @@ export default function SportCentersPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <ProtectedRoute>
+      <div className="min-h-screen">
+        <Navbar />
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-secondary/20 via-background to-primary/20 py-20">
+        <section className="relative overflow-hidden bg-gradient-to-br from-secondary/20 via-background to-primary/20 py-20">
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
         <div className="container relative mx-auto px-4">
           <div className="mx-auto max-w-4xl text-center">
@@ -99,9 +101,9 @@ export default function SportCentersPage() {
             </p>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
+        <section className="border-b border-border/50 bg-card/50 py-8 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-end">
@@ -161,9 +163,9 @@ export default function SportCentersPage() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section className="py-12">
+        <section className="py-12">
         <div className="container mx-auto px-4">
           {loading ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -265,7 +267,8 @@ export default function SportCentersPage() {
             </>
           )}
         </div>
-      </section>
-    </div>
+        </section>
+      </div>
+    </ProtectedRoute>
   )
 }

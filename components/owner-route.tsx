@@ -11,7 +11,14 @@ export function OwnerRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== "OWNER")) {
+    if (loading) return
+
+    if (!isAuthenticated) {
+      router.push("/login")
+      return
+    }
+
+    if (user?.role !== "OWNER") {
       router.push("/")
     }
   }, [isAuthenticated, loading, user, router])

@@ -39,7 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("user", JSON.stringify(me))
       } catch (error) {
         console.error("Auth check failed:", error)
-        // On any failure, clear auth state
         setUser(null)
         localStorage.removeItem("user")
         localStorage.removeItem("access_token")

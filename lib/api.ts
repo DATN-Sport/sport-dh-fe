@@ -76,7 +76,7 @@ export interface SportField {
   images: SportFieldImage[]
   name: string
   address: string
-  sport_type: "FOOTBALL" | "BADMINTON" | "TENNIS" | "BASKETBALL" | "VOLLEYBALL"
+  sport_type: "FOOTBALL" | "BADMINTON" | "TENNIS" | "PICK_A_BALL"
   price: number
   status: "ACTIVE" | "INACTIVE"
   created_at: string

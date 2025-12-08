@@ -30,8 +30,7 @@ const sportTypes = [
   { value: "FOOTBALL", label: "Bóng đá" },
   { value: "BADMINTON", label: "Cầu lông" },
   { value: "TENNIS", label: "Tennis" },
-  { value: "BASKETBALL", label: "Bóng rổ" },
-  { value: "VOLLEYBALL", label: "Bóng chuyền" },
+  { value: "PICK_A_BALL", label: "Pick a ball" },
 ]
 
 export default function AdminSportFieldsPage() {
