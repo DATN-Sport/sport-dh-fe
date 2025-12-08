@@ -10,10 +10,19 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { apiClient, type Booking, type BookingListResponse, type SportCenter, type SportField } from "@/lib/api"
+import {
+  apiClient,
+  type Booking,
+  type BookingListResponse,
+  type SportCenter,
+  type SportField,
+  type BookingStatsResponse,
+} from "@/lib/api"
 import { handleApiError } from "@/lib/error-handler"
 import { useToast } from "@/hooks/use-toast"
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 export default function OwnerBookingManagePage() {
   const { toast } = useToast()
@@ -24,6 +33,11 @@ export default function OwnerBookingManagePage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [count, setCount] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  // stats
+  const [stats, setStats] = useState<BookingStatsResponse | null>(null)
+  const [statsLoading, setStatsLoading] = useState(false)
+  const [statsPreset, setStatsPreset] = useState<"today" | "this_week" | "this_month" | "this_quarter">("this_month")
 
   // filters
   const [limit, setLimit] = useState(10)
@@ -41,6 +55,22 @@ export default function OwnerBookingManagePage() {
   const [year, setYear] = useState<number | "">("")
   const [user, setUser] = useState("")
 
+  const fetchStats = async (preset?: "today" | "this_week" | "this_month" | "this_quarter") => {
+    try {
+      setStatsLoading(true)
+      const data = await apiClient.getBookingStats({
+        preset: preset ?? statsPreset,
+        limit_top_fields: 5,
+      })
+      setStats(data)
+    } catch (error) {
+      const { title, description } = handleApiError(error)
+      toast({ title, description, variant: "destructive" })
+    } finally {
+      setStatsLoading(false)
+    }
+  }
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -57,6 +87,11 @@ export default function OwnerBookingManagePage() {
     }
     init()
   }, [toast])
+
+  useEffect(() => {
+    fetchStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const fetchBookings = async () => {
     try {
@@ -107,6 +142,106 @@ export default function OwnerBookingManagePage() {
               <h1 className="text-3xl font-bold">Quản lý booking</h1>
               <p className="text-muted-foreground">Xem và lọc các booking theo nhiều tiêu chí</p>
             </div>
+
+            {/* Revenue stats */}
+            <Card className="mb-6">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle>Thống kê doanh thu</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Dựa trên booking đã xác nhận/hoàn tất, hiển thị trong phạm vi trung tâm của bạn.
+                  </p>
+                </div>
+                <div className="w-40">
+                  <Label className="mb-1 block text-xs">Khoảng thời gian</Label>
+                  <Select
+                    value={statsPreset}
+                    onValueChange={(v: any) => {
+                      const preset = v as "today" | "this_week" | "this_month" | "this_quarter"
+                      setStatsPreset(preset)
+                      fetchStats(preset)
+                    }}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="today">Hôm nay</SelectItem>
+                      <SelectItem value="this_week">Tuần này</SelectItem>
+                      <SelectItem value="this_month">Tháng này</SelectItem>
+                      <SelectItem value="this_quarter">Quý này</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {statsLoading && (
+                  <div className="flex h-40 items-center justify-center text-muted-foreground">
+                    <Calendar className="mr-2 h-5 w-5" /> Đang tải thống kê...
+                  </div>
+                )}
+                {!statsLoading && stats && (
+                  <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      <div className="rounded-lg border bg-muted/30 p-4">
+                        <div className="text-xs font-medium text-muted-foreground">Tổng doanh thu</div>
+                        <div className="mt-2 text-2xl font-bold">
+                          {stats.summary.total_revenue.toLocaleString("vi-VN")}đ
+                        </div>
+                      </div>
+                      <div className="rounded-lg border bg-muted/30 p-4">
+                        <div className="text-xs font-medium text-muted-foreground">Tổng số booking</div>
+                        <div className="mt-2 text-2xl font-bold">
+                          {stats.summary.total_bookings.toLocaleString("vi-VN")}
+                        </div>
+                      </div>
+                      <div className="rounded-lg border bg-muted/30 p-4">
+                        <div className="text-xs font-medium text-muted-foreground">Theo trạng thái</div>
+                        <div className="mt-2 space-y-1 text-sm">
+                          {stats.by_status.map((s) => (
+                            <div key={s.status} className="flex items-center justify-between">
+                              <span>{s.status}</span>
+                              <span className="font-mono text-xs">
+                                {s.revenue.toLocaleString("vi-VN")}đ ({s.count})
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {stats.by_center.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Doanh thu theo trung tâm</div>
+                        <ChartContainer
+                          config={{
+                            revenue: {
+                              label: "Doanh thu",
+                              // Màu cam sáng theo style tham chiếu
+                              color: "hsl(24 95% 55%)",
+                            },
+                          }}
+                          className="h-72 w-full rounded-xl bg-muted/30 px-4 py-6"
+                        >
+                          <BarChart data={stats.by_center}>
+                            <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                            <XAxis dataKey="center_name" tickLine={false} tickMargin={8} />
+                            <YAxis tickLine={false} tickMargin={8} />
+                            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                            <Bar
+                              dataKey="revenue"
+                              fill="var(--color-revenue)"
+                              radius={8}
+                              stroke="transparent"
+                            />
+                          </BarChart>
+                        </ChartContainer>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Filters */}
             <Card className="mb-6">

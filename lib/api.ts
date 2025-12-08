@@ -137,6 +137,50 @@ export interface BookingMiniListResponse {
   results: BookingMini[]
 }
 
+// Booking stats (revenue/booking) response
+export interface BookingStatsFilters {
+  preset: "today" | "this_week" | "this_month" | "this_quarter" | null
+  date_from: string | null
+  date_to: string | null
+  statuses: string[]
+  limit_top_fields: number
+}
+
+export interface BookingStatsSummary {
+  total_revenue: number
+  total_bookings: number
+}
+
+export interface BookingStatsByStatusItem {
+  status: string
+  revenue: number
+  count: number
+}
+
+export interface BookingStatsByCenterItem {
+  center_id: number
+  center_name: string
+  revenue: number
+  count: number
+}
+
+export interface BookingStatsTopFieldItem {
+  field_id: number
+  field_name: string
+  center_id: number
+  center_name: string
+  revenue: number
+  count: number
+}
+
+export interface BookingStatsResponse {
+  filters: BookingStatsFilters
+  summary: BookingStatsSummary
+  by_status: BookingStatsByStatusItem[]
+  by_center: BookingStatsByCenterItem[]
+  top_fields: BookingStatsTopFieldItem[]
+}
+
 export interface BookingMini {
   id: number
   sport_field: number
@@ -549,6 +593,35 @@ class ApiClient {
     if (params?.ordering) queryParams.append("ordering", params.ordering)
 
     return this.request<BookingMiniListResponse>(`/booking/list/?${queryParams}`)
+  }
+
+  // Booking stats (revenue/booking) for admin/owner
+  async getBookingStats(params?: {
+    preset?: "today" | "this_week" | "this_month" | "this_quarter"
+    date_from?: string
+    date_to?: string
+    statuses?: string[]
+    limit_top_fields?: number
+  }): Promise<BookingStatsResponse> {
+    const queryParams = new URLSearchParams()
+
+    if (params?.preset) queryParams.append("preset", params.preset)
+    if (params?.date_from) queryParams.append("date_from", params.date_from)
+    if (params?.date_to) queryParams.append("date_to", params.date_to)
+    if (params?.statuses && params.statuses.length > 0) {
+      params.statuses.forEach((status) => {
+        queryParams.append("statuses", status)
+      })
+    }
+    if (params?.limit_top_fields !== undefined) {
+      queryParams.append("limit_top_fields", String(params.limit_top_fields))
+    }
+
+    const queryString = queryParams.toString()
+
+    return this.request<BookingStatsResponse>(`/booking/stats/${queryString ? `?${queryString}` : ""}`, {
+      headers: this.getAuthHeader(),
+    })
   }
 
   async getBookingDetail(id: number): Promise<Booking> {

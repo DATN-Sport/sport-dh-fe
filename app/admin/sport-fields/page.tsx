@@ -6,9 +6,9 @@ import { AdminRoute } from "@/components/admin-route"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Pencil, Trash2, Upload, X } from "lucide-react"
+import { Plus, Pencil, Trash2, Upload, X, ChevronDown, SlidersHorizontal, Images } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiClient, type SportField, type SportCenter } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -25,6 +25,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getErrorMessage, getErrorTitle } from "@/lib/error-handler"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
 
 const sportTypes = [
   { value: "FOOTBALL", label: "Bóng đá" },
@@ -32,6 +35,8 @@ const sportTypes = [
   { value: "TENNIS", label: "Tennis" },
   { value: "PICK_A_BALL", label: "Pick a ball" },
 ]
+
+const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 
 export default function AdminSportFieldsPage() {
   const [fields, setFields] = useState<SportField[]>([])
@@ -41,6 +46,13 @@ export default function AdminSportFieldsPage() {
   const [editingField, setEditingField] = useState<SportField | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const { toast } = useToast()
+
+  // filters giống trang khách
+  const [centerNameFilter, setCenterNameFilter] = useState("")
+  const [sportTypeFilter, setSportTypeFilter] = useState("")
+  const [addressFilter, setAddressFilter] = useState("")
+  const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
+  const [maxPrice, setMaxPrice] = useState<number>(500000)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -57,7 +69,12 @@ export default function AdminSportFieldsPage() {
   const fetchData = async () => {
     try {
       const [fieldsData, centersData] = await Promise.all([
-        apiClient.getAllSportFields(),
+        apiClient.getAllSportFields({
+          center_name: centerNameFilter.trim() || undefined,
+          sport_type: sportTypeFilter || undefined,
+          address: addressFilter.trim() || undefined,
+          price_lte: maxPrice || undefined,
+        }),
         apiClient.getAllSportCenters(),
       ])
       setFields(fieldsData)
@@ -71,6 +88,16 @@ export default function AdminSportFieldsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = () => {
+    setLoading(true)
+    fetchData()
+  }
+
+  const handleDistrictSelect = (district: string) => {
+    setAddressFilter(district)
+    setDistrictPopoverOpen(false)
   }
 
   const handleEdit = (field: SportField) => {
@@ -209,63 +236,182 @@ export default function AdminSportFieldsPage() {
               </Button>
             </div>
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            {/* Filters giống trang khách (rút gọn) */}
+            <Card className="mb-6 border-border/60 bg-card/80">
+              <div className="space-y-4 p-4">
+                <div className="grid gap-4 md:grid-cols-4 md:items-end">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Tên trung tâm</Label>
+                    <Input
+                      placeholder="Nhập tên trung tâm..."
+                      value={centerNameFilter}
+                      onChange={(e) => setCenterNameFilter(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Loại sân</Label>
+                    <Select
+                      value={sportTypeFilter || undefined}
+                      onValueChange={(value) => setSportTypeFilter(value || "")}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Tất cả loại sân" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sportTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Địa chỉ</Label>
+                    <div className="relative">
+                      <Input
+                        placeholder="Nhập địa chỉ hoặc chọn quận..."
+                        value={addressFilter}
+                        onChange={(e) => setAddressFilter(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        className="pr-10"
+                      />
+                      <Popover open={districtPopoverOpen} onOpenChange={setDistrictPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[220px] p-0" align="end">
+                          <div className="p-1">
+                            {DISTRICTS.map((district) => (
+                              <button
+                                key={district}
+                                type="button"
+                                onClick={() => handleDistrictSelect(district)}
+                                className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                              >
+                                {district}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Giá tối đa: {maxPrice.toLocaleString("vi-VN")}đ
+                    </Label>
+                    <Slider
+                      value={[maxPrice]}
+                      onValueChange={(value) => setMaxPrice(value[0])}
+                      min={50000}
+                      max={500000}
+                      step={10000}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span>Bộ lọc đang áp dụng cho danh sách sân trong bảng bên dưới.</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setCenterNameFilter("")
+                        setSportTypeFilter("")
+                        setAddressFilter("")
+                        setMaxPrice(500000)
+                        fetchData()
+                      }}
+                    >
+                      Làm mới
+                    </Button>
+                    <Button onClick={handleSearch}>Tìm kiếm</Button>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {fields.map((field) => (
-                  <Card key={field.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle>{field.name}</CardTitle>
-                          <CardDescription>{getCenterName(field)}</CardDescription>
-                        </div>
-                        <Badge variant={field.status === "ACTIVE" ? "default" : "secondary"}>
-                          {field.status === "ACTIVE" ? "Hoạt động" : "Không hoạt động"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Loại sân:</span>
-                          <span className="font-medium">{getSportTypeLabel(field.sport_type)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Giá:</span>
-                          <span className="font-medium">{field.price.toLocaleString("vi-VN")} đ</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Số ảnh:</span>
-                          <span className="font-medium">{field.images.length}</span>
-                        </div>
-                        <div className="flex gap-2 pt-2">
+            </Card>
+
+            <Card className="border-border/60 bg-card/80">
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Tên sân</TableHead>
+                      <TableHead>Trung tâm</TableHead>
+                      <TableHead>Loại</TableHead>
+                      <TableHead>Giá</TableHead>
+                      <TableHead>Trạng thái</TableHead>
+                      <TableHead className="text-center">Ảnh</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fields.map((field) => (
+                      <TableRow key={field.id}>
+                        <TableCell>{field.id}</TableCell>
+                        <TableCell className="font-medium">{field.name}</TableCell>
+                        <TableCell>{getCenterName(field)}</TableCell>
+                        <TableCell>{getSportTypeLabel(field.sport_type)}</TableCell>
+                        <TableCell>{field.price.toLocaleString("vi-VN")} đ</TableCell>
+                        <TableCell>
+                          <Badge variant={field.status === "ACTIVE" ? "default" : "secondary"}>
+                            {field.status === "ACTIVE" ? "Hoạt động" : "Không hoạt động"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              title="Quản lý hình ảnh"
+                            >
+                              <Images className="h-4 w-4" />
+                            </Button>
+                            <span className="text-xs text-muted-foreground">{field.images.length}</span>
+                          </div>
                           <ImageGalleryManager
                             images={field.images}
                             onImagesChange={fetchData}
                             entityType="sport_field"
                             entityId={field.id}
                           />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(field)} className="flex-1">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Sửa
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(field.id)} className="flex-1">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(field)}>
+                              <Pencil className="mr-1 h-4 w-4" />
+                              Sửa
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(field.id)}>
+                              <Trash2 className="mr-1 h-4 w-4" />
+                              Xóa
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
           </main>
         </div>
       </div>

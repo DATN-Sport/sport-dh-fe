@@ -6,8 +6,8 @@ import { AdminRoute } from "@/components/admin-route"
 import { AdminSidebar } from "@/components/admin-sidebar"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Pencil, Trash2 } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Plus, Pencil, Trash2, ChevronDown } from "lucide-react"
 import { useEffect, useState } from "react"
 import { apiClient, type SportCenter, type User } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
@@ -25,6 +25,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getErrorMessage, getErrorTitle } from "@/lib/error-handler"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+const DISTRICTS = ["Hải Châu", "Thanh Khê", "Cẩm Lệ", "Ngũ Hành Sơn", "Liên Chiểu", "Sơn Trà", "Hòa Vang"]
 
 export default function AdminSportCentersPage() {
   const [centers, setCenters] = useState<SportCenter[]>([])
@@ -33,6 +37,11 @@ export default function AdminSportCentersPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCenter, setEditingCenter] = useState<SportCenter | null>(null)
   const { toast } = useToast()
+
+  // filters (giống trang khách)
+  const [nameFilter, setNameFilter] = useState("")
+  const [addressFilter, setAddressFilter] = useState("")
+  const [districtPopoverOpen, setDistrictPopoverOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     owner: "",
@@ -47,7 +56,11 @@ export default function AdminSportCentersPage() {
 
   const fetchCenters = async () => {
     try {
-      const data = await apiClient.getAllSportCenters()
+      const params: { owner?: string; name?: string; address?: string } = {}
+      if (nameFilter.trim()) params.name = nameFilter.trim()
+      if (addressFilter.trim()) params.address = addressFilter.trim()
+
+      const data = await apiClient.getAllSportCenters(params)
       setCenters(data)
     } catch (error) {
       toast({
@@ -58,6 +71,16 @@ export default function AdminSportCentersPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = () => {
+    setLoading(true)
+    fetchCenters()
+  }
+
+  const handleDistrictSelect = (district: string) => {
+    setAddressFilter(district)
+    setDistrictPopoverOpen(false)
   }
 
   const fetchUsers = async () => {
@@ -163,54 +186,129 @@ export default function AdminSportCentersPage() {
               </Button>
             </div>
 
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            {/* Filters giống trang khách (rút gọn) */}
+            <Card className="mb-6 border-border/60 bg-card/80">
+              <div className="grid gap-4 p-4 md:grid-cols-3 md:items-end">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Tên trung tâm</Label>
+                  <Input
+                    placeholder="Nhập tên trung tâm..."
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Địa chỉ</Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Nhập địa chỉ hoặc chọn quận..."
+                      value={addressFilter}
+                      onChange={(e) => setAddressFilter(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      className="pr-10"
+                    />
+                    <Popover open={districtPopoverOpen} onOpenChange={setDistrictPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                        >
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[220px] p-0" align="end">
+                        <div className="p-1">
+                          {DISTRICTS.map((district) => (
+                            <button
+                              key={district}
+                              type="button"
+                              onClick={() => handleDistrictSelect(district)}
+                              className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                            >
+                              {district}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                <div className="flex gap-2 md:justify-end">
+                  <Button
+                    variant="outline"
+                    className="flex-1 md:flex-none"
+                    onClick={() => {
+                      setNameFilter("")
+                      setAddressFilter("")
+                      fetchCenters()
+                    }}
+                  >
+                    Làm mới
+                  </Button>
+                  <Button className="flex-1 md:flex-none" onClick={handleSearch}>
+                    Tìm kiếm
+                  </Button>
+                </div>
               </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {centers.map((center) => (
-                  <Card key={center.id}>
-                    <CardHeader>
-                      <CardTitle>{center.name}</CardTitle>
-                      <CardDescription>{center.address}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Chủ sở hữu: {getOwnerName(center.owner)}</p>
-                        <p className="text-sm text-muted-foreground">Số lượng ảnh: {center.images.length}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Ngày tạo: {new Date(center.created_at).toLocaleDateString("vi-VN")}
-                        </p>
-                        <div className="flex gap-2 pt-2">
+            </Card>
+
+            <Card className="border-border/60 bg-card/80">
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Tên</TableHead>
+                      <TableHead>Địa chỉ</TableHead>
+                      <TableHead>Chủ sở hữu</TableHead>
+                      <TableHead className="text-center">Số sân</TableHead>
+                      <TableHead>Ngày tạo</TableHead>
+                      <TableHead className="text-right">Hình ảnh</TableHead>
+                      <TableHead className="text-right">Thao tác</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {centers.map((center) => (
+                      <TableRow key={center.id}>
+                        <TableCell>{center.id}</TableCell>
+                        <TableCell className="font-medium">{center.name}</TableCell>
+                        <TableCell className="max-w-xs truncate">{center.address}</TableCell>
+                        <TableCell>{getOwnerName(center.owner)}</TableCell>
+                        <TableCell className="text-center">{center.total_field}</TableCell>
+                        <TableCell>{new Date(center.created_at).toLocaleDateString("vi-VN")}</TableCell>
+                        <TableCell className="text-right">
                           <ImageGalleryManager
                             images={center.images}
                             onImagesChange={fetchCenters}
                             entityType="sport_center"
                             entityId={center.id}
                           />
-                        </div>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(center)} className="flex-1">
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Sửa
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(center.id)}
-                            className="flex-1"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(center)}>
+                              <Pencil className="mr-1 h-4 w-4" />
+                              Sửa
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(center.id)}>
+                              <Trash2 className="mr-1 h-4 w-4" />
+                              Xóa
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </Card>
           </main>
         </div>
       </div>

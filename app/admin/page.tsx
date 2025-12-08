@@ -13,20 +13,25 @@ export default function AdminDashboard() {
     users: 0,
     sportCenters: 0,
     sportFields: 0,
+    totalRevenue: 0,
+    totalBookings: 0,
   })
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [users, centers, fields] = await Promise.all([
+        const [users, centers, fields, bookingStats] = await Promise.all([
           apiClient.getAllUsers(),
           apiClient.getAllSportCenters(),
           apiClient.getAllSportFields(),
+          apiClient.getBookingStats().catch(() => null),
         ])
         setStats({
           users: users.length,
           sportCenters: centers.length,
           sportFields: fields.length,
+          totalRevenue: bookingStats?.summary?.total_revenue ?? 0,
+          totalBookings: bookingStats?.summary?.total_bookings ?? 0,
         })
       } catch (error) {
         console.error("Failed to fetch stats:", error)
@@ -83,12 +88,16 @@ export default function AdminDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium">Hoạt động</CardTitle>
+                  <CardTitle className="text-sm font-medium">Doanh thu & booking (tháng này)</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">100%</div>
-                  <p className="text-xs text-muted-foreground">Hệ thống hoạt động tốt</p>
+                  <div className="text-2xl font-bold">
+                    {stats.totalRevenue.toLocaleString("vi-VN")}đ
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Tổng booking: {stats.totalBookings.toLocaleString("vi-VN")}
+                  </p>
                 </CardContent>
               </Card>
             </div>

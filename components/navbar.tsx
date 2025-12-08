@@ -21,110 +21,124 @@ export function Navbar() {
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2">
+      {/* Hàng nav cao hơn, logo KT full chiều cao ở góc trái */}
+      <div className="flex h-20 items-center justify-between">
+        <div className="flex h-full items-center px-3">
           <Image
-            src="/logo-web.png"
-            alt="Sport DH Logo"
-            width={40}
-            height={40}
-            className="h-10 w-10 object-contain"
+            src="/kt-logo.jpg"
+            alt="KT Logo"
+            width={80}
+            height={80}
+            className="h-full w-auto object-contain"
+            priority
           />
-          <span className="text-xl font-bold">Sport DH</span>
-        </Link>
-
-        <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" asChild>
-            <Link href="/sport-centers" className="gap-2">
-              <Building2 className="h-4 w-4" />
-              Trung tâm
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/sport-fields" className="gap-2">
-              <Calendar className="h-4 w-4" />
-              Sân thể thao
-            </Link>
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/booking-history" className="gap-2">
-              <History className="h-4 w-4" />
-              Lịch Sử Đặt Sân
-            </Link>
-          </Button>
         </div>
 
-        <div className="flex items-center gap-4">
-          {user && (
-            <>
-              {user.role === "ADMIN" && (
-                <Link href="/admin">
-                  <Button variant="outline" className="gap-2 bg-transparent">
-                    <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Quản trị</span>
-                  </Button>
-                </Link>
-              )}
-              {user.role === "OWNER" && (
-                <Link href="/owner">
-                  <Button variant="outline" className="gap-2 bg-transparent">
-                    <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Quản lý</span>
-                  </Button>
-                </Link>
-              )}
+        <div className="container mx-auto flex h-full items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/logo-web.png"
+              alt="Sport DH Logo"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
+            />
+            <span className="text-xl font-bold">Sport DH</span>
+          </Link>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{user.username}</span>
+          <div className="hidden items-center gap-2 md:flex">
+            <Button variant="ghost" asChild>
+              <Link href="/sport-centers" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Trung tâm
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/sport-fields" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Sân thể thao
+              </Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/booking-history" className="gap-2">
+                <History className="h-4 w-4" />
+                Lịch Sử Đặt Sân
+              </Link>
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {user && (
+              <>
+                {user.role === "ADMIN" && (
+                  <Link href="/admin">
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <Settings className="h-4 w-4" />
+                      <span className="hidden sm:inline">Quản trị</span>
+                    </Button>
+                  </Link>
+                )}
+                {user.role === "OWNER" && (
+                  <Link href="/owner">
+                    <Button variant="outline" className="gap-2 bg-transparent">
+                      <Settings className="h-4 w-4" />
+                      <span className="hidden sm:inline">Quản lý</span>
+                    </Button>
+                  </Link>
+                )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="gap-2">
+                      <User className="h-4 w-4" />
+                      <span className="hidden sm:inline">{user.username}</span>
+                      {user.role === "ADMIN" && (
+                        <Badge variant="default" className="ml-1 hidden md:inline-flex">
+                          Admin
+                        </Badge>
+                      )}
+                      {user.role === "OWNER" && (
+                        <Badge variant="secondary" className="ml-1 hidden md:inline-flex">
+                          Owner
+                        </Badge>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/profile" className="flex w-full cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Thông tin cá nhân
+                      </Link>
+                    </DropdownMenuItem>
                     {user.role === "ADMIN" && (
-                      <Badge variant="default" className="ml-1 hidden md:inline-flex">
-                        Admin
-                      </Badge>
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="flex w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Quản trị hệ thống
+                        </Link>
+                      </DropdownMenuItem>
                     )}
                     {user.role === "OWNER" && (
-                      <Badge variant="secondary" className="ml-1 hidden md:inline-flex">
-                        Owner
-                      </Badge>
+                      <DropdownMenuItem asChild>
+                        <Link href="/owner" className="flex w-full cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Quản lý trung tâm
+                        </Link>
+                      </DropdownMenuItem>
                     )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile" className="flex w-full cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      Thông tin cá nhân
-                    </Link>
-                  </DropdownMenuItem>
-                  {user.role === "ADMIN" && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="flex w-full cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Quản trị hệ thống
-                      </Link>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => logout()}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Đăng xuất
                     </DropdownMenuItem>
-                  )}
-                  {user.role === "OWNER" && (
-                    <DropdownMenuItem asChild>
-                      <Link href="/owner" className="flex w-full cursor-pointer">
-                        <Settings className="mr-2 h-4 w-4" />
-                        Quản lý trung tâm
-                      </Link>
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => logout()}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Đăng xuất
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>
