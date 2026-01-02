@@ -49,7 +49,11 @@ export default function OwnerBookingManagePage() {
   const [rentalSlot, setRentalSlot] = useState<number | "">("")
   const [status, setStatus] = useState<"" | "PENDING" | "CONFIRMED">("")
   const [bookingDateAfter, setBookingDateAfter] = useState("")
-  const [bookingDateBefore, setBookingDateBefore] = useState("")
+  const [bookingDateBefore, setBookingDateBefore] = useState(() => {
+    // Mặc định là ngày hôm nay
+    const today = new Date()
+    return today.toISOString().split('T')[0]
+  })
   const [bookingDateExact, setBookingDateExact] = useState("")
   const [month, setMonth] = useState<number | "">("")
   const [year, setYear] = useState<number | "">("")
@@ -119,10 +123,12 @@ export default function OwnerBookingManagePage() {
     }
   }
 
+  // Xóa useEffect tự động filter - chỉ filter khi click "Áp dụng"
+  // Fetch lần đầu khi component mount với filter mặc định
   useEffect(() => {
     fetchBookings()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [limit, offset])
+  }, [])
 
   const totalPages = Math.max(1, Math.ceil(count / limit))
 
@@ -299,8 +305,8 @@ export default function OwnerBookingManagePage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Người dùng (ID)</Label>
-                    <Input value={user} onChange={(e) => setUser(e.target.value)} placeholder="User ID" />
+                    <Label>Người dùng (Email)</Label>
+                    <Input value={user} onChange={(e) => setUser(e.target.value)} placeholder="Email" />
                   </div>
 
                   <div className="space-y-2">
@@ -348,8 +354,9 @@ export default function OwnerBookingManagePage() {
                     <Input
                       type="number"
                       min={1}
+                      max={150}
                       value={String(limit)}
-                      onChange={(e) => setLimit(Math.max(1, Number(e.target.value) || 10))}
+                      onChange={(e) => setLimit(Math.max(1, Math.min(150, Number(e.target.value) || 10)))}
                       placeholder="VD: 10"
                     />
                   </div>
@@ -362,7 +369,9 @@ export default function OwnerBookingManagePage() {
                     setRentalSlot("")
                     setStatus("")
                     setBookingDateAfter("")
-                    setBookingDateBefore("")
+                    // Reset về ngày hôm nay
+                    const today = new Date()
+                    setBookingDateBefore(today.toISOString().split('T')[0])
                     setBookingDateExact("")
                     setMonth("")
                     setYear("")
@@ -429,13 +438,13 @@ export default function OwnerBookingManagePage() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="mt-4 flex items-center justify-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                    <Button variant="outline" size="icon" onClick={() => { setPage((p) => Math.max(1, p - 1)); fetchBookings(); }} disabled={page === 1}>
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <div className="text-sm">
                       Trang {page}/{totalPages}
                     </div>
-                    <Button variant="outline" size="icon" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}>
+                    <Button variant="outline" size="icon" onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); fetchBookings(); }} disabled={page === totalPages}>
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>

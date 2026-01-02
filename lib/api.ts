@@ -88,6 +88,31 @@ export interface ChatbotResponse {
   answer: string
 }
 
+export interface ChatMessage {
+  id: number
+  role: "user" | "assistant"
+  content: string
+  created_at: string
+}
+
+export interface ChatHistoryResponse {
+  session_id: string
+  messages: ChatMessage[]
+  total: number
+}
+
+export interface ChatSession {
+  session_id: string
+  message_count: number
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatSessionsResponse {
+  sessions: ChatSession[]
+  total: number
+}
+
 export interface BookingUser {
   id: number
   full_name: string
@@ -488,13 +513,31 @@ class ApiClient {
   }
 
   async chatbot(question: string, sessionId?: string): Promise<ChatbotResponse> {
-    const queryParams = new URLSearchParams({ q: question })
+    const body: { q: string; session_id?: string } = { q: question }
     if (sessionId) {
-      queryParams.append("session_id", sessionId)
+      body.session_id = sessionId
     }
 
-    return this.request<ChatbotResponse>(`/chatbot/?${queryParams.toString()}`, {
+    return this.request<ChatbotResponse>("/chat/", {
       method: "POST",
+      headers: {
+        ...this.getAuthHeader(),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    })
+  }
+
+  async getChatHistory(sessionId: string): Promise<ChatHistoryResponse> {
+    return this.request<ChatHistoryResponse>(`/chat/history/?session_id=${sessionId}`, {
+      method: "GET",
+      headers: this.getAuthHeader(),
+    })
+  }
+
+  async getChatSessions(): Promise<ChatSessionsResponse> {
+    return this.request<ChatSessionsResponse>("/chat/sessions/", {
+      method: "GET",
       headers: this.getAuthHeader(),
     })
   }
@@ -534,6 +577,7 @@ class ApiClient {
   async getBookingManage(params?: {
     limit?: number
     offset?: number
+    id?: string | number
     owner?: string
     sport_center?: number
     sport_field?: number
@@ -549,6 +593,7 @@ class ApiClient {
     const queryParams = new URLSearchParams()
     if (params?.limit !== undefined) queryParams.append("limit", String(params.limit))
     if (params?.offset !== undefined) queryParams.append("offset", String(params.offset))
+    if (params?.id !== undefined) queryParams.append("id", String(params.id))
     if (params?.owner) queryParams.append("owner", params.owner)
     if (params?.sport_center !== undefined) queryParams.append("sport_center", String(params.sport_center))
     if (params?.sport_field !== undefined) queryParams.append("sport_field", String(params.sport_field))

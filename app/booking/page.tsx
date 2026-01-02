@@ -26,6 +26,14 @@ const SPORT_TYPES = [
   { value: "PICK_A_BALL", label: "Pick a ball" },
 ]
 
+// Helper function to format date as YYYY-MM-DD in local timezone
+const formatDateLocal = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 interface SportField {
   id: number
   name: string
@@ -190,7 +198,7 @@ export default function BookingPage() {
         setLoadingBookings(true)
         const response = await getBookings({
           sport_field: selectedField.id,
-          booking_date_: selectedDate.toISOString().split("T")[0],
+          booking_date_: formatDateLocal(selectedDate),
           ordering: "rental_slot",
         })
         setBookings(response.results || response || [])
@@ -239,7 +247,7 @@ export default function BookingPage() {
       // Refresh bookings
       const response = await getBookings({
         sport_field: selectedField!.id,
-        booking_date_: selectedDate.toISOString().split("T")[0],
+        booking_date_: formatDateLocal(selectedDate),
         ordering: "rental_slot",
       })
       setBookings(response as unknown as Booking[] || [])

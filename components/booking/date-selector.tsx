@@ -14,9 +14,15 @@ interface DateSelectorProps {
 export function DateSelector({ selectedDate, onDateChange, disabledDates = [] }: DateSelectorProps) {
   const [weekStart, setWeekStart] = useState<Date>(() => {
     const today = new Date()
-    const day = today.getDay()
-    const diff = today.getDate() - day
-    return new Date(today.setDate(diff))
+    const day = today.getDay() // 0 = Chủ Nhật, 1 = Thứ 2, ..., 6 = Thứ 7
+    // Tính toán để tuần bắt đầu từ Thứ 2 (Monday = 1)
+    // Nếu là Chủ Nhật (0), trừ 6 ngày để về Thứ 2 tuần trước
+    // Nếu là Thứ 2-7 (1-6), trừ (day - 1) ngày để về Thứ 2 của tuần hiện tại
+    const diff = day === 0 ? -6 : -(day - 1)
+    const weekStartDate = new Date(today)
+    weekStartDate.setDate(today.getDate() + diff)
+    weekStartDate.setHours(0, 0, 0, 0)
+    return weekStartDate
   })
 
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -73,7 +79,10 @@ export function DateSelector({ selectedDate, onDateChange, disabledDates = [] }:
     setWeekStart(newStart)
   }
 
-  const dayNames = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"]
+  // Vì weekStart là Thứ 2, weekDays đã đúng thứ tự: [Thứ 2, Thứ 3, ..., Chủ Nhật]
+  // Map day index: Thứ 2 (1) -> 0, Thứ 3 (2) -> 1, ..., Chủ Nhật (0) -> 6
+  const getDayIndex = (day: number) => day === 0 ? 6 : day - 1
+  const dayNames = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"]
 
   return (
     <div className="space-y-4">
@@ -90,27 +99,30 @@ export function DateSelector({ selectedDate, onDateChange, disabledDates = [] }:
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {weekDays.map((date, index) => (
-          <button
-            key={index}
-            onClick={() => onDateChange(date)}
-            disabled={isDateDisabled(date)}
-            className={cn(
-              "flex flex-col items-center justify-center gap-1 rounded-lg px-4 py-3 transition-all",
-              "min-w-[80px] border-2",
-              isSelected(date)
-                ? "border-primary bg-primary/10 text-primary"
-                : isToday(date)
-                  ? "border-secondary bg-secondary/10 text-secondary"
-                  : "border-border hover:border-primary/50",
-              isDateDisabled(date) && "cursor-not-allowed opacity-50",
-            )}
-          >
-            <span className="text-xs font-medium">{dayNames[date.getDay()]}</span>
-            <span className="text-lg font-bold">{date.getDate()}</span>
-            {isToday(date) && <span className="text-xs text-muted-foreground">Hôm nay</span>}
-          </button>
-        ))}
+        {weekDays.map((date, index) => {
+          const dayIndex = getDayIndex(date.getDay())
+          return (
+            <button
+              key={index}
+              onClick={() => onDateChange(date)}
+              disabled={isDateDisabled(date)}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 rounded-lg px-4 py-3 transition-all",
+                "min-w-[80px] border-2",
+                isSelected(date)
+                  ? "border-primary bg-primary/10 text-primary"
+                  : isToday(date)
+                    ? "border-secondary bg-secondary/10 text-secondary"
+                    : "border-border hover:border-primary/50",
+                isDateDisabled(date) && "cursor-not-allowed opacity-50",
+              )}
+            >
+              <span className="text-xs font-medium">{dayNames[dayIndex]}</span>
+              <span className="text-lg font-bold">{date.getDate()}</span>
+              {isToday(date) && <span className="text-xs text-muted-foreground">Hôm nay</span>}
+            </button>
+          )
+        })}
       </div>
     </div>
   )

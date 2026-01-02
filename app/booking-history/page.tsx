@@ -24,6 +24,7 @@ export default function BookingHistoryPage() {
 
   // simple filters
   const [status, setStatus] = useState<"" | "PENDING" | "CONFIRMED">("")
+  const [bookingId, setBookingId] = useState("")
 
   // pagination
   const [limit, setLimit] = useState(10)
@@ -42,6 +43,7 @@ export default function BookingHistoryPage() {
       }
 
       if (status) params.status = status
+      if (bookingId) params.id = bookingId
 
       const data: BookingListResponse = await apiClient.getBookingManage(params)
       setBookings(data.results)
@@ -75,7 +77,17 @@ export default function BookingHistoryPage() {
             <CardTitle>Bộ lọc đơn giản</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2">
+                <Label>Booking ID</Label>
+                <Input
+                  type="number"
+                  value={bookingId}
+                  onChange={(e) => setBookingId(e.target.value)}
+                  placeholder="VD: 12345"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label>Trạng thái</Label>
                 <Select value={status || "all"} onValueChange={(v: any) => setStatus(v === "all" ? "" : v)}>
@@ -118,6 +130,7 @@ export default function BookingHistoryPage() {
               <Button
                 variant="outline"
                 onClick={() => {
+                  setBookingId("")
                   setStatus("")
                   setPage(1)
                   setLimit(10)

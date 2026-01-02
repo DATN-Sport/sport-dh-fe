@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils"
 import ReactMarkdown from "react-markdown"
 import { useRouter } from "next/navigation"
 
+const BOOKING_GUIDE = "Đặt [Tên trung tâm] lúc [khung giờ] - xác nhận"
+
 interface Message {
   id: string
   type: "user" | "bot"
@@ -33,16 +35,62 @@ export function Chatbot() {
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const historyLoadedRef = useRef<string | null>(null)
 
   const normalizeAnswer = (answer: string) => {
     const cleaned = answer.replace(/<think>[\s\S]*?<\/think>/gi, "").trim()
     return cleaned || answer
   }
 
+  const sanitizeMessageContent = (content: string) => {
+    if (!content) return content
+    const cleaned = content.replace(/<think>[\s\S]*?<\/think>/gi, "").trim()
+    return cleaned || content
+  }
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
+
+  // Load session_id from localStorage on mount
+  useEffect(() => {
+    const savedSessionId = typeof window !== "undefined" ? localStorage.getItem("chat_session_id") : null
+    if (savedSessionId) {
+      setSessionId(savedSessionId)
+    }
+  }, [])
+
+  // Load chat history when session_id is available
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!sessionId || historyLoadedRef.current === sessionId) return // Already loaded for this session
+
+      historyLoadedRef.current = sessionId
+      setIsLoadingHistory(true)
+      try {
+        const history = await apiClient.getChatHistory(sessionId)
+        if (history.messages && history.messages.length > 0) {
+        const historyMessages: Message[] = history.messages.map((msg) => ({
+          id: msg.id.toString(),
+          type: msg.role === "user" ? "user" : "bot",
+          content: sanitizeMessageContent(msg.content),
+          timestamp: new Date(msg.created_at),
+        }))
+          setMessages(historyMessages)
+        }
+      } catch (error) {
+        console.error("Failed to load chat history:", error)
+        // Continue with welcome message if history load fails
+        historyLoadedRef.current = null // Reset on error so we can retry
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    loadHistory()
+  }, [sessionId])
 
   useEffect(() => {
     scrollToBottom()
@@ -66,6 +114,10 @@ export function Chatbot() {
       const response = await apiClient.chatbot(input, sessionId ?? undefined)
       if (response.session_id) {
         setSessionId(response.session_id)
+        // Save session_id to localStorage
+        if (typeof window !== "undefined") {
+          localStorage.setItem("chat_session_id", response.session_id)
+        }
       }
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -94,6 +146,7 @@ export function Chatbot() {
     }
   }
 
+
   return (
     <>
       {/* Floating Button */}
@@ -120,6 +173,11 @@ export function Chatbot() {
                 <div className="flex-1">
                   <CardTitle className="text-lg">Trợ lý AI Sport DH</CardTitle>
                   <CardDescription>Hỏi tôi về sân thể thao</CardDescription>
+                  <div className="mt-3 rounded-lg border bg-muted px-3 py-2">
+                    <p className="text-xs font-semibold text-primary mb-1">Cách đặt sân:</p>
+                    <p className="text-xs text-muted-foreground">{BOOKING_GUIDE}</p>
+                    <p className="text-[10px] text-muted-foreground mt-1">Ví dụ: Tôi đặt Sân bóng đá Mini Hòa Xuân lúc 18:30 - 19:30 - xác nhận</p>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -143,6 +201,11 @@ export function Chatbot() {
           <CardContent className="flex min-h-0 flex-1 flex-col p-0">
             {/* Messages */}
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+              {isLoadingHistory && (
+                <div className="flex justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
               {messages.map((message) => (
                 <div key={message.id} className={cn("flex", message.type === "user" ? "justify-end" : "justify-start")}>
                   <div
@@ -179,7 +242,7 @@ export function Chatbot() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Nhập câu hỏi của bạn..."
+                  placeholder="Nhập câu hỏi hoặc lệnh đặt sân..."
                   disabled={loading}
                 />
                 <Button onClick={handleSend} disabled={loading || !input.trim()} size="icon">

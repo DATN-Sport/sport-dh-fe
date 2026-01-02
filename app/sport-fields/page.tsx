@@ -318,12 +318,14 @@ export default function SportFieldsPage() {
                       </div>
                     </div>
                     <CardHeader>
-                      <CardTitle className="line-clamp-1 text-lg">{field.name}</CardTitle>
-                      {field.center_info && (
-                        <CardDescription className="text-xs text-muted-foreground line-clamp-1">
-                          {field.center_info.name}
-                        </CardDescription>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="line-clamp-1 text-lg">{field.name}</CardTitle>
+                        {field.center_info && (
+                          <CardDescription className="text-xs text-muted-foreground line-clamp-1">
+                            {field.center_info.name}
+                          </CardDescription>
+                        )}
+                      </div>
                       <CardDescription className="text-base font-semibold text-accent">
                         {field.price.toLocaleString("vi-VN")}đ/giờ
                       </CardDescription>
